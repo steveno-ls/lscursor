@@ -39,19 +39,19 @@ const PROFILE_ACCESS_OPTIONS: {
     value: 'site_lead',
     title: 'Site lead',
     description:
-      'Can manage Staff with the same products, within their assigned locations.',
+      'Can manage Staff with the same applications, within their assigned locations.',
   },
   {
     value: 'area_lead',
     title: 'Area lead',
     description:
-      'Can manage Site lead and Staff with the same products, across all locations.',
+      'Can manage Site lead and Staff with the same applications, across all locations.',
   },
   {
     value: 'admin',
     title: 'Admin',
     description:
-      'Can manage all users, products, and locations (except Owners).',
+      'Can manage all users, applications, and locations (except Owners).',
   },
 ]
 
