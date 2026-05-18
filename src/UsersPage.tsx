@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react'
 import { AddUserWizard } from './AddUserWizard'
+import { useProductLine } from './context/ProductLineContext'
+import type { UserRow } from './config/types'
 import { UserProfilePage } from './UserProfilePage'
 import {
   Button,
@@ -20,69 +22,7 @@ import {
   UserItem,
 } from '@lightspeed/unified-components-helios-theme/react'
 
-export interface UserRow {
-  id: string
-  name: string
-  subtitle: string
-  apps: string
-  accountAccess: string
-  lastActive: string
-  enabled: boolean
-}
-
-const USERS: UserRow[] = [
-  {
-    id: '1',
-    name: 'Brandon Rogers',
-    subtitle: 'brandon.rodgers@continental.com',
-    apps: 'eCom, Retail, Wholesale',
-    accountAccess: 'Admin',
-    lastActive: 'Today',
-    enabled: true,
-  },
-  {
-    id: '2',
-    name: 'Dixie Matrix',
-    subtitle: 'DMatrix01',
-    apps: 'Retail, Wholesale',
-    accountAccess: 'Site lead',
-    lastActive: '1 week ago',
-    enabled: true,
-  },
-  {
-    id: '3',
-    name: 'Jenna Kahn',
-    subtitle: 'JKahn01',
-    apps: 'Retail',
-    accountAccess: 'Staff',
-    lastActive: '—',
-    enabled: true,
-  },
-  {
-    id: '4',
-    name: 'John Wickershire',
-    subtitle: 'john.wick@continental.com',
-    apps: 'eCom, Retail, Wholesale',
-    accountAccess: 'Owner',
-    lastActive: 'Yesterday',
-    enabled: false,
-  },
-  {
-    id: '5',
-    name: 'Sarah Turner',
-    subtitle: 'sarah.turner@continental.com',
-    apps: 'Retail, Wholesale',
-    accountAccess: 'Area Lead',
-    lastActive: 'Today',
-    enabled: true,
-  },
-]
-
-const APP_FILTER_OPTIONS = [
-  { value: 'eCom', label: 'eCom' },
-  { value: 'Retail', label: 'Retail' },
-  { value: 'Wholesale', label: 'Wholesale' },
-]
+export type { UserRow }
 
 const ACCESS_FILTER_OPTIONS = [
   { value: 'Admin', label: 'Admin' },
@@ -106,21 +46,22 @@ function formatMultiFilterLabel(
 }
 
 export function UsersPage() {
+  const { users, appFilterOptions } = useProductLine()
   const [profileUserId, setProfileUserId] = useState<string | null>(null)
   const [addUserOpen, setAddUserOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [appsFilter, setAppsFilter] = useState<string[]>([])
   const [accessFilter, setAccessFilter] = useState<string[]>([])
   const [enabledById, setEnabledById] = useState<Record<string, boolean>>(() =>
-    Object.fromEntries(USERS.map((u) => [u.id, u.enabled])),
+    Object.fromEntries(users.map((u) => [u.id, u.enabled])),
   )
 
-  const appsLabel = formatMultiFilterLabel('Apps', appsFilter, APP_FILTER_OPTIONS)
-  const accessLabel = formatMultiFilterLabel('Account access', accessFilter, ACCESS_FILTER_OPTIONS)
+  const appsLabel = formatMultiFilterLabel('Applications', appsFilter, appFilterOptions)
+  const accessLabel = formatMultiFilterLabel('Access level', accessFilter, ACCESS_FILTER_OPTIONS)
 
   const rows = useMemo(() => {
     const q = query.trim().toLowerCase()
-    return USERS.filter((u) => {
+    return users.filter((u) => {
       if (q && !u.name.toLowerCase().includes(q) && !u.subtitle.toLowerCase().includes(q)) {
         return false
       }
@@ -132,7 +73,7 @@ export function UsersPage() {
       }
       return true
     })
-  }, [query, appsFilter, accessFilter])
+  }, [users, query, appsFilter, accessFilter])
 
   const tableHeadSlot = (
     <Card
@@ -180,7 +121,7 @@ export function UsersPage() {
             multiple
             showSelectAll
             selectAllLabel="Select all"
-            options={APP_FILTER_OPTIONS.map((o) => ({
+            options={appFilterOptions.map((o) => ({
               value: o.value,
               label: o.label,
             }))}
@@ -253,7 +194,7 @@ export function UsersPage() {
     )
   }
 
-  const profileUser = profileUserId ? USERS.find((u) => u.id === profileUserId) : undefined
+  const profileUser = profileUserId ? users.find((u) => u.id === profileUserId) : undefined
   if (profileUser) {
     return (
       <div className="flex w-full justify-center">
@@ -267,7 +208,7 @@ export function UsersPage() {
       <div className="flex w-full flex-row items-center justify-between gap-4">
         <div className="flex min-w-0 flex-1 flex-col gap-1">
           <h1 className='typography-heading-lg'>Users</h1>
-          <p className='typography-body-md'>Manage users across your account and all Lightspeed apps.</p>
+          <p className='typography-body-md'>Manage all users across your account and Lightspeed applications.</p>
         </div>
         <Button
           appearance="primary"
@@ -292,8 +233,8 @@ export function UsersPage() {
           <TableHead>
             <TableRow>
               <TableHeadCell align="start">Name</TableHeadCell>
-              <TableHeadCell align="start">Apps</TableHeadCell>
-              <TableHeadCell align="start">Account access</TableHeadCell>
+              <TableHeadCell align="start">Applications</TableHeadCell>
+              <TableHeadCell align="start">Access level</TableHeadCell>
               <TableHeadCell align="start">Last active</TableHeadCell>
               <TableHeadCell align="end">Enabled</TableHeadCell>
             </TableRow>

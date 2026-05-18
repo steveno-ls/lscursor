@@ -1,4 +1,11 @@
 import { useMemo, useState } from 'react'
+import { AppRowThumbnail } from './components/AppRowThumbnail'
+import {
+  clearedAppAssignment,
+  ProductAppAssignmentFields,
+} from './components/ProductAppAssignmentFields'
+import type { ProductAppRow, ProfileAccessKey, UserProfileUser } from './config/types'
+import { useProductLine } from './context/ProductLineContext'
 import {
   Badge,
   Button,
@@ -11,80 +18,10 @@ import {
   Input,
   Link,
   MediaLeftBlockLayout,
-  MultiSelect,
-  Select,
   UserThumbnail,
 } from '@lightspeed/unified-components-helios-theme/react'
 
-/** Matches `UserRow` in UsersPage (duplicated here to avoid circular imports). */
-export type UserProfileUser = {
-  id: string
-  name: string
-  subtitle: string
-  apps: string
-  accountAccess: string
-  lastActive: string
-  enabled: boolean
-}
-
-export type ProfileAccessKey = 'staff' | 'site_lead' | 'area_lead' | 'admin' | 'owner'
-
-export type WizardAppId = 'retail' | 'ecom' | 'wholesale'
-
-export type ProfileAppRow = {
-  id: WizardAppId
-  shop: string
-  productLine: string
-  assigned: boolean
-  role: string
-  locations: string[]
-}
-
-export type UserProfileDetail = {
-  firstName: string
-  lastName: string
-  email: string
-  summarySecondary: string
-  accessKey: ProfileAccessKey
-  apps: ProfileAppRow[]
-}
-
-const RETAIL_ROLE_OPTIONS = [
-  { value: 'cashier', label: 'Cashier' },
-  { value: 'manager', label: 'Manager' },
-  { value: 'admin', label: 'Admin' },
-] as const
-
-const ECOM_ROLE_OPTIONS = [
-  { value: 'designer', label: 'Designer' },
-  { value: 'manager', label: 'Manager' },
-  { value: 'admin', label: 'Admin' },
-] as const
-
-const ECOM_ROLE_OPTIONS_WITH_MARKETING = [
-  ...ECOM_ROLE_OPTIONS,
-  { value: 'marketing', label: 'Marketing' },
-] as const
-
-const WHOLESALE_ROLE_OPTIONS = [
-  { value: 'pos_only', label: 'POS Only' },
-  { value: 'buyer', label: 'Buyer' },
-  { value: 'admin', label: 'Admin' },
-] as const
-
-const RETAIL_LOCATION_OPTIONS = [
-  { value: 'ponsonby', label: 'Ponsonby' },
-  { value: 'new_market', label: 'New Market' },
-  { value: 'albany', label: 'Albany' },
-] as const
-
-const RETAIL_LOCATION_OPTIONS_SECTION = [{ items: [...RETAIL_LOCATION_OPTIONS] }]
-
-function roleOptionsForApp(appId: WizardAppId, includeEcomMarketing: boolean) {
-  if (appId === 'retail') return RETAIL_ROLE_OPTIONS
-  if (appId === 'ecom') return includeEcomMarketing ? ECOM_ROLE_OPTIONS_WITH_MARKETING : ECOM_ROLE_OPTIONS
-  return WHOLESALE_ROLE_OPTIONS
-}
+export type { UserProfileUser }
 
 const PROFILE_ACCESS_OPTIONS: {
   value: ProfileAccessKey
@@ -92,276 +29,37 @@ const PROFILE_ACCESS_OPTIONS: {
   description: string
   defaultBadge?: boolean
 }[] = [
-    {
-      value: 'staff',
-      title: 'Staff',
-      description: 'Can update their profile details and password.',
-      defaultBadge: true,
-    },
-    {
-      value: 'site_lead',
-      title: 'Site lead',
-      description:
-        'Can add, update, and delete Staff based on their assigned apps, roles, and locations below.',
-    },
-    {
-      value: 'area_lead',
-      title: 'Area lead',
-      description:
-        'Can add, update, and delete Site leads and Staff based on their assigned apps and roles in any location below.',
-    },
-    {
-      value: 'admin',
-      title: 'Admin',
-      description:
-        'Can add, update, and delete Admins, Area leads, Site leads and Staff and assign any app, role, and location below.',
-    },
-    {
-      value: 'owner',
-      title: 'Owner',
-      description:
-        'Full account control including billing, user management, and all products linked to this account.',
-    },
-  ]
+  {
+    value: 'staff',
+    title: 'Staff',
+    description: 'Can update their own profile and password only.',
+    defaultBadge: true,
+  },
+  {
+    value: 'site_lead',
+    title: 'Site lead',
+    description:
+      'Can manage Staff with the same products, within their assigned locations.',
+  },
+  {
+    value: 'area_lead',
+    title: 'Area lead',
+    description:
+      'Can manage Site lead and Staff with the same products, across all locations.',
+  },
+  {
+    value: 'admin',
+    title: 'Admin',
+    description:
+      'Can manage all users, products, and locations (except Owners).',
+  },
+]
 
 const PROFILE_ACCESS_TITLE = Object.fromEntries(
   PROFILE_ACCESS_OPTIONS.map(({ value, title }) => [value, title]),
 ) as Record<ProfileAccessKey, string>
 
-const PROFILE_BY_USER_ID: Record<string, UserProfileDetail> = {
-  '1': {
-    firstName: 'Brandon',
-    lastName: 'Rogers',
-    email: 'brandon.rodgers@continental.com',
-    summarySecondary: 'brandon.rodgers@continental.com',
-    accessKey: 'admin',
-    apps: [
-      {
-        id: 'retail',
-        shop: 'The Continental',
-        productLine: 'Retail (X-Series)',
-        assigned: true,
-        role: 'admin',
-        locations: ['ponsonby', 'new_market'],
-      },
-      {
-        id: 'ecom',
-        shop: 'www.thecontinental.com',
-        productLine: 'eCom (E-Series)',
-        assigned: true,
-        role: 'admin',
-        locations: [],
-      },
-      {
-        id: 'wholesale',
-        shop: 'The Continental',
-        productLine: 'Wholesale',
-        assigned: true,
-        role: 'admin',
-        locations: [],
-      },
-    ],
-  },
-  '2': {
-    firstName: 'Dixie',
-    lastName: 'Matrix',
-    email: 'dmatrix@continental.com',
-    summarySecondary: 'DMatrix01',
-    accessKey: 'site_lead',
-    apps: [
-      {
-        id: 'retail',
-        shop: 'The Continental',
-        productLine: 'Retail (X-Series)',
-        assigned: true,
-        role: 'manager',
-        locations: ['albany'],
-      },
-      {
-        id: 'ecom',
-        shop: 'www.thecontinental.com',
-        productLine: 'eCom (E-Series)',
-        assigned: false,
-        role: '',
-        locations: [],
-      },
-      {
-        id: 'wholesale',
-        shop: 'The Continental',
-        productLine: 'Wholesale',
-        assigned: true,
-        role: 'buyer',
-        locations: [],
-      },
-    ],
-  },
-  '3': {
-    firstName: 'Jenna',
-    lastName: 'Kahn',
-    email: 'jkahn@continental.com',
-    summarySecondary: 'JKahn01',
-    accessKey: 'staff',
-    apps: [
-      {
-        id: 'retail',
-        shop: 'The Continental',
-        productLine: 'Retail (X-Series)',
-        assigned: true,
-        role: 'cashier',
-        locations: ['ponsonby'],
-      },
-      {
-        id: 'ecom',
-        shop: 'www.thecontinental.com',
-        productLine: 'eCom (E-Series)',
-        assigned: false,
-        role: '',
-        locations: [],
-      },
-      {
-        id: 'wholesale',
-        shop: 'The Continental',
-        productLine: 'Wholesale',
-        assigned: false,
-        role: '',
-        locations: [],
-      },
-    ],
-  },
-  '4': {
-    firstName: 'John',
-    lastName: 'Wickershire',
-    email: 'john.wick@continental.com',
-    summarySecondary: 'john.wick@continental.com',
-    accessKey: 'owner',
-    apps: [
-      {
-        id: 'retail',
-        shop: 'The Continental',
-        productLine: 'Retail (X-Series)',
-        assigned: true,
-        role: 'cashier',
-        locations: ['ponsonby'],
-      },
-      {
-        id: 'ecom',
-        shop: 'www.thecontinental.com',
-        productLine: 'eCom (E-Series)',
-        assigned: true,
-        role: 'marketing',
-        locations: [],
-      },
-      {
-        id: 'wholesale',
-        shop: 'The Continental',
-        productLine: 'Wholesale',
-        assigned: false,
-        role: '',
-        locations: [],
-      },
-    ],
-  },
-  '5': {
-    firstName: 'Sarah',
-    lastName: 'Turner',
-    email: 'sarah.turner@continental.com',
-    summarySecondary: 'sarah.turner@continental.com',
-    accessKey: 'area_lead',
-    apps: [
-      {
-        id: 'retail',
-        shop: 'The Continental',
-        productLine: 'Retail (X-Series)',
-        assigned: true,
-        role: 'manager',
-        locations: ['new_market', 'albany'],
-      },
-      {
-        id: 'ecom',
-        shop: 'www.thecontinental.com',
-        productLine: 'eCom (E-Series)',
-        assigned: false,
-        role: '',
-        locations: [],
-      },
-      {
-        id: 'wholesale',
-        shop: 'The Continental',
-        productLine: 'Wholesale',
-        assigned: true,
-        role: 'buyer',
-        locations: [],
-      },
-    ],
-  },
-}
-
-function mapListAccessToKey(accountAccess: string): ProfileAccessKey {
-  const s = accountAccess.trim().toLowerCase()
-  if (s === 'staff') return 'staff'
-  if (s === 'site lead') return 'site_lead'
-  if (s.includes('area')) return 'area_lead'
-  if (s === 'admin') return 'admin'
-  if (s === 'owner') return 'owner'
-  return 'staff'
-}
-
-function parseAppsFromList(appsCsv: string): WizardAppId[] {
-  const parts = appsCsv.split(',').map((p) => p.trim().toLowerCase())
-  const out: WizardAppId[] = []
-  if (parts.some((p) => p.includes('retail'))) out.push('retail')
-  if (parts.some((p) => p.includes('ecom'))) out.push('ecom')
-  if (parts.some((p) => p.includes('wholesale'))) out.push('wholesale')
-  return out
-}
-
-function profileDetailForUser(user: UserProfileUser): UserProfileDetail {
-  const preset = PROFILE_BY_USER_ID[user.id]
-  if (preset) return preset
-
-  const [firstName = user.name, ...rest] = user.name.split(' ')
-  const lastName = rest.join(' ') || ''
-  const accessKey = mapListAccessToKey(user.accountAccess)
-  const enabledIds = parseAppsFromList(user.apps)
-  const templates: ProfileAppRow[] = [
-    {
-      id: 'retail',
-      shop: 'The Continental',
-      productLine: 'Retail (X-Series)',
-      assigned: enabledIds.includes('retail'),
-      role: enabledIds.includes('retail') ? 'cashier' : '',
-      locations: enabledIds.includes('retail') ? ['ponsonby'] : [],
-    },
-    {
-      id: 'ecom',
-      shop: 'www.thecontinental.com',
-      productLine: 'eCom (E-Series)',
-      assigned: enabledIds.includes('ecom'),
-      role: enabledIds.includes('ecom') ? 'designer' : '',
-      locations: [],
-    },
-    {
-      id: 'wholesale',
-      shop: 'The Continental',
-      productLine: 'Wholesale',
-      assigned: enabledIds.includes('wholesale'),
-      role: enabledIds.includes('wholesale') ? 'buyer' : '',
-      locations: [],
-    },
-  ]
-  return {
-    firstName,
-    lastName,
-    email: user.subtitle.includes('@') ? user.subtitle : `${user.subtitle.toLowerCase()}@continental.com`,
-    summarySecondary: user.subtitle,
-    accessKey,
-    apps: templates,
-  }
-}
-
 const APP_CARD_CONTENT_CLASSES = ['flex', 'flex-col', 'gap-4'] as const
-
-const APP_ROW_THUMB_SRC = `${import.meta.env.BASE_URL}icons/retail-app.png`
 
 export type UserProfilePageProps = {
   user: UserProfileUser
@@ -369,13 +67,17 @@ export type UserProfilePageProps = {
 }
 
 export function UserProfilePage({ user, onBack }: UserProfilePageProps) {
-  const seed = useMemo(() => profileDetailForUser(user), [user])
+  const productLine = useProductLine()
+  const seed = useMemo(
+    () => productLine.createProfileDetailForUser(user),
+    [productLine, user],
+  )
 
   const [firstName, setFirstName] = useState(seed.firstName)
   const [lastName, setLastName] = useState(seed.lastName)
   const [email, setEmail] = useState(seed.email)
   const [accessKey, setAccessKey] = useState<ProfileAccessKey>(seed.accessKey)
-  const [apps, setApps] = useState<ProfileAppRow[]>(() =>
+  const [apps, setApps] = useState<ProductAppRow[]>(() =>
     seed.apps.map((a) => ({ ...a, locations: [...a.locations] })),
   )
 
@@ -602,15 +304,7 @@ export function UserProfilePage({ user, onBack }: UserProfilePageProps) {
                 }}
               >
                 <div className="flex flex-wrap items-center gap-4">
-                  <img
-                    src={APP_ROW_THUMB_SRC}
-                    alt=""
-                    width={56}
-                    height={56}
-                    className="size-14 shrink-0 rounded-lg object-cover"
-                    decoding="async"
-                    draggable={false}
-                  />
+                  <AppRowThumbnail appId={app.id} />
                   <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                     <p className="typography-body-md-emphasized text-neutral-default">{app.shop}</p>
                     <p className="typography-body-sm text-neutral-default">{app.productLine}</p>
@@ -624,14 +318,14 @@ export function UserProfilePage({ user, onBack }: UserProfilePageProps) {
                         setApps((prev) =>
                           prev.map((a) =>
                             a.id === app.id
-                              ? { ...a, assigned: false, role: '', locations: [] }
+                              ? { ...a, ...clearedAppAssignment() }
                               : a,
                           ),
                         )
                       }
                       customClasses={{ container: ['shrink-0'] }}
                     >
-                      Remove product
+                      {productLine.removeProductLabel ?? 'Remove product'}
                     </Button>
                   ) : (
                     <Button
@@ -641,56 +335,35 @@ export function UserProfilePage({ user, onBack }: UserProfilePageProps) {
                       onClick={() =>
                         setApps((prev) =>
                           prev.map((a) =>
-                            a.id === app.id ? { ...a, assigned: true, role: '', locations: [] } : a,
+                            a.id === app.id ? {
+                            ...a,
+                            assigned: true,
+                            role: '',
+                            locations: [],
+                            useUniquePin: false,
+                            pin: '',
+                            pinConfirm: '',
+                          } : a,
                           ),
                         )
                       }
                       customClasses={{ container: ['shrink-0'] }}
                     >
-                      Assign product
+                      {productLine.assignProductLabel ?? 'Assign product'}
                     </Button>
                   )}
                 </div>
-                {app.assigned && (
-                  <div className="flex flex-wrap gap-4">
-                    <div className="min-w-[200px] flex-1">
-                      <Field labelSlot="Role" required size="medium">
-                        <Select
-                          size="medium"
-                          labelLayout="outside"
-                          placeholder="Select role"
-                          options={[...roleOptionsForApp(app.id, includeEcomMarketing)]}
-                          value={app.role === '' ? undefined : app.role}
-                          onChange={(opt) =>
-                            setApps((prev) =>
-                              prev.map((a) =>
-                                a.id === app.id ? { ...a, role: opt?.value ?? '' } : a,
-                              ),
-                            )
-                          }
-                        />
-                      </Field>
-                    </div>
-                    {app.id === 'retail' ? (
-                      <div className="min-w-[200px] flex-1">
-                        <Field labelSlot="Location" required size="medium">
-                          <MultiSelect
-                            id={`user-profile-app-${app.id}-locations`}
-                            size="medium"
-                            options={RETAIL_LOCATION_OPTIONS_SECTION}
-                            value={app.locations}
-                            placeholder="Select locations"
-                            onChange={(vals) =>
-                              setApps((prev) =>
-                                prev.map((a) => (a.id === app.id ? { ...a, locations: vals } : a)),
-                              )
-                            }
-                          />
-                        </Field>
-                      </div>
-                    ) : null}
-                  </div>
-                )}
+                {app.assigned ? (
+                  <ProductAppAssignmentFields
+                    app={app}
+                    productLine={productLine}
+                    fieldIdPrefix="user-profile-app"
+                    includeEcomMarketing={includeEcomMarketing}
+                    onChange={(next) =>
+                      setApps((prev) => prev.map((a) => (a.id === app.id ? next : a)))
+                    }
+                  />
+                ) : null}
               </Card>
             ))}
         </div>

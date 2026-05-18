@@ -1,4 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { AppRowThumbnail } from './components/AppRowThumbnail'
+import {
+  clearedAppAssignment,
+  ProductAppAssignmentFields,
+} from './components/ProductAppAssignmentFields'
+import type { ProductAppRow } from './config/types'
+import { useProductLine } from './context/ProductLineContext'
 import {
   Badge,
   Button,
@@ -12,8 +19,6 @@ import {
   Input,
   Link,
   MediaLeftBlockLayout,
-  MultiSelect,
-  Select,
   SegmentedControlGroup,
   SegmentedControlItem,
   StepItem,
@@ -69,64 +74,6 @@ const ACCESS_TITLE: Record<AccessKey, string> = {
   admin: 'Admin',
 }
 
-type AppId = 'retail' | 'ecom' | 'wholesale'
-
-type AppRow = {
-  id: AppId
-  shop: string
-  productLine: string
-  assigned: boolean
-  role: string
-  /** Retail only; ignored for eCom and Wholesale */
-  locations: string[]
-}
-
-function createDefaultApps(): AppRow[] {
-  return [
-    {
-      id: 'retail',
-      shop: 'The Continental Gift Shop',
-      productLine: 'Retail (X-Series)',
-      assigned: false,
-      role: '',
-      locations: [],
-    },
-    {
-      id: 'ecom',
-      shop: 'www.thecontinental.com',
-      productLine: 'eCom (E-Series)',
-      assigned: false,
-      role: '',
-      locations: [],
-    },
-    {
-      id: 'wholesale',
-      shop: 'The Continental Gift Shop',
-      productLine: 'Wholesale',
-      assigned: false,
-      role: '',
-      locations: [],
-    },
-  ]
-}
-
-/** Same product tile image for all app rows (Retail X-Series artwork). */
-const APP_ROW_THUMB_SRC = `${import.meta.env.BASE_URL}icons/retail-app.png`
-
-function AppRowThumbnail() {
-  return (
-    <img
-      src={APP_ROW_THUMB_SRC}
-      alt=""
-      width={56}
-      height={56}
-      className="size-14 shrink-0 rounded-lg object-cover"
-      decoding="async"
-      draggable={false}
-    />
-  )
-}
-
 function usernameShowsValidIndicator(value: string): boolean {
   const t = value.trim()
   return /^[a-zA-Z0-9._-]{3,}$/.test(t)
@@ -178,59 +125,11 @@ function generateTemporaryPassword(): string {
   return out.join('')
 }
 
-const RETAIL_ROLE_OPTIONS = [
-  { value: 'cashier', label: 'Cashier' },
-  { value: 'manager', label: 'Manager' },
-  { value: 'admin', label: 'Admin' },
-] as const
-
-const ECOM_ROLE_OPTIONS = [
-  { value: 'designer', label: 'Designer' },
-  { value: 'manager', label: 'Manager' },
-  { value: 'admin', label: 'Admin' },
-] as const
-
-const WHOLESALE_ROLE_OPTIONS = [
-  { value: 'pos_only', label: 'POS Only' },
-  { value: 'buyer', label: 'Buyer' },
-  { value: 'admin', label: 'Admin' },
-] as const
-
-const RETAIL_LOCATION_OPTIONS = [
-  { value: 'ponsonby', label: 'Ponsonby' },
-  { value: 'new_market', label: 'New Market' },
-  { value: 'albany', label: 'Albany' },
-] as const
-
-const RETAIL_LOCATION_OPTIONS_SECTION = [{ items: [...RETAIL_LOCATION_OPTIONS] }]
-
-function roleOptionsForApp(appId: AppId) {
-  if (appId === 'retail') return RETAIL_ROLE_OPTIONS
-  if (appId === 'ecom') return ECOM_ROLE_OPTIONS
-  return WHOLESALE_ROLE_OPTIONS
-}
-
-function roleLabelFor(appId: AppId, role: string): string {
-  const opts = roleOptionsForApp(appId)
-  return opts.find((o) => o.value === role)?.label ?? role
-}
-
-function retailLocationLabels(values: string[]): string {
-  return values
-    .map((v) => RETAIL_LOCATION_OPTIONS.find((o) => o.value === v)?.label ?? v)
-    .join(', ')
-}
-
-function isAssignedAppConfigured(app: AppRow): boolean {
-  if (!app.role.trim()) return false
-  if (app.id === 'retail') return app.locations.length > 0
-  return true
-}
-
 /** Standalone product cards (not CardStack): keep default Card border/padding; stack rows in content. */
 const APP_CARD_CONTENT_CLASSES = ['flex', 'flex-col', 'gap-4'] as const
 
 export function AddUserWizard({ onClose }: AddUserWizardProps) {
+  const productLine = useProductLine()
   const [step, setStep] = useState<WizardStep>('access')
   const [accessKey, setAccessKey] = useState<AccessKey>('staff')
   const [firstName, setFirstName] = useState('')
@@ -239,7 +138,7 @@ export function AddUserWizard({ onClose }: AddUserWizardProps) {
   const [accountMode, setAccountMode] = useState<'invite' | 'credentials'>('invite')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
-  const [apps, setApps] = useState<AppRow[]>(() => createDefaultApps())
+  const [apps, setApps] = useState<ProductAppRow[]>(() => productLine.createDefaultApps())
   const [profileSaveAttempted, setProfileSaveAttempted] = useState(false)
   const [loginDetailsCopied, setLoginDetailsCopied] = useState(false)
   const firstNameFieldRef = useRef<HTMLDivElement>(null)
@@ -268,7 +167,7 @@ export function AddUserWizard({ onClose }: AddUserWizardProps) {
     setAccountMode('invite')
     setUsername('')
     setPassword('')
-    setApps(createDefaultApps())
+    setApps(productLine.createDefaultApps())
     setProfileSaveAttempted(false)
     setLoginDetailsCopied(false)
     profileFirstNameFocusedRef.current = false
@@ -311,7 +210,7 @@ export function AddUserWizard({ onClose }: AddUserWizardProps) {
   const assignedApps = apps.filter((a) => a.assigned)
 
   const accessStepCanContinue =
-    assignedApps.length > 0 && assignedApps.every(isAssignedAppConfigured)
+    assignedApps.length > 0 && assignedApps.every(productLine.isAssignedAppConfigured)
 
   const profileFirstNameInvalid = profileSaveAttempted && firstName.trim() === ''
   const profileEmailInvalid = profileSaveAttempted && accountMode === 'invite' && email.trim() === ''
@@ -344,7 +243,7 @@ export function AddUserWizard({ onClose }: AddUserWizardProps) {
 
   return (
     <div
-      className="box-border flex min-w-0 w-full flex-col gap-8 px-4 py-8 font-general sm:px-0"
+      className="box-border flex min-w-0 w-full flex-col gap-8 px-4 font-general sm:px-0"
       style={{
         width: 'min(100%, 600px)',
         maxWidth: 600,
@@ -510,7 +409,7 @@ export function AddUserWizard({ onClose }: AddUserWizardProps) {
                       }}
                     >
                       <div className="flex flex-wrap items-center gap-4">
-                        <AppRowThumbnail />
+                        <AppRowThumbnail appId={app.id} />
                         <div className="flex min-w-0 flex-1 flex-col gap-1">
                           <p className="typography-body-md-emphasized text-neutral-default">
                             {app.shop}
@@ -526,14 +425,14 @@ export function AddUserWizard({ onClose }: AddUserWizardProps) {
                               setApps((prev) =>
                                 prev.map((a) =>
                                   a.id === app.id
-                                    ? { ...a, assigned: false, role: '', locations: [] }
+                                    ? { ...a, ...clearedAppAssignment() }
                                     : a,
                                 ),
                               )
                             }
                             customClasses={{ container: ['shrink-0'] }}
                           >
-                            Remove product
+                            {productLine.removeProductLabel ?? 'Remove product'}
                           </Button>
                         ) : (
                           <Button
@@ -544,62 +443,36 @@ export function AddUserWizard({ onClose }: AddUserWizardProps) {
                               setApps((prev) =>
                                 prev.map((a) =>
                                   a.id === app.id
-                                    ? { ...a, assigned: true, role: '', locations: [] }
+                                    ? {
+                                        ...a,
+                                        assigned: true,
+                                        role: '',
+                                        locations: [],
+                                        useUniquePin: false,
+                                        pin: '',
+                                        pinConfirm: '',
+                                      }
                                     : a,
                                 ),
                               )
                             }
                             customClasses={{ container: ['shrink-0'] }}
                           >
-                            Assign product
+                            {productLine.assignProductLabel ?? 'Assign product'}
                           </Button>
                         )}
                       </div>
 
-                      {app.assigned && (
-                        <div className="flex flex-wrap gap-4">
-                          <div className="min-w-[200px] flex-1">
-                            <Field labelSlot="Role" required size="medium">
-                              <Select
-                                size="medium"
-                                labelLayout="outside"
-                                placeholder="Select role"
-                                options={[...roleOptionsForApp(app.id)]}
-                                value={app.role === '' ? undefined : app.role}
-                                onChange={(opt) =>
-                                  setApps((prev) =>
-                                    prev.map((a) =>
-                                      a.id === app.id
-                                        ? { ...a, role: opt?.value ?? '' }
-                                        : a,
-                                    ),
-                                  )
-                                }
-                              />
-                            </Field>
-                          </div>
-                          {app.id === 'retail' ? (
-                            <div className="min-w-[200px] flex-1">
-                              <Field labelSlot="Location" required size="medium">
-                                <MultiSelect
-                                  id={`add-user-app-${app.id}-locations`}
-                                  size="medium"
-                                  options={RETAIL_LOCATION_OPTIONS_SECTION}
-                                  value={app.locations}
-                                  placeholder="Select locations"
-                                  onChange={(vals) =>
-                                    setApps((prev) =>
-                                      prev.map((a) =>
-                                        a.id === app.id ? { ...a, locations: vals } : a,
-                                      ),
-                                    )
-                                  }
-                                />
-                              </Field>
-                            </div>
-                          ) : null}
-                        </div>
-                      )}
+                      {app.assigned ? (
+                        <ProductAppAssignmentFields
+                          app={app}
+                          productLine={productLine}
+                          fieldIdPrefix="add-user-app"
+                          onChange={(next) =>
+                            setApps((prev) => prev.map((a) => (a.id === app.id ? next : a)))
+                          }
+                        />
+                      ) : null}
                     </Card>
                   ))}
                 </div>
@@ -926,7 +799,7 @@ export function AddUserWizard({ onClose }: AddUserWizardProps) {
                       }}
                     >
                       <div className="flex flex-wrap items-center gap-4">
-                        <AppRowThumbnail />
+                        <AppRowThumbnail appId={app.id} />
                         <div className="flex min-w-0 flex-1 flex-col gap-1">
                           <p className="typography-body-md-emphasized text-neutral-default">{app.shop}</p>
                           <p className="typography-body-sm text-neutral-default">{app.productLine}</p>
@@ -936,15 +809,25 @@ export function AddUserWizard({ onClose }: AddUserWizardProps) {
                         <div>
                           <p className="typography-body-md-emphasized text-neutral-default">Role</p>
                           <p className="typography-body-sm text-neutral-default">
-                            {roleLabelFor(app.id, app.role)}
+                            {productLine.roleLabelFor(app.id, app.role)}
                           </p>
                         </div>
-                        {app.id === 'retail' ? (
+                        {productLine.appSupportsLocations(app.id) ? (
                           <div>
-                            <p className="typography-body-md-emphasized text-neutral-default">Locations</p>
-                            <p className="typography-body-sm text-neutral-default">
-                              {retailLocationLabels(app.locations)}
+                            <p className="typography-body-md-emphasized text-neutral-default">
+                              {productLine.locationFieldMode?.(app.id) === 'single'
+                                ? 'Location'
+                                : 'Locations'}
                             </p>
+                            <p className="typography-body-sm text-neutral-default">
+                              {productLine.locationLabels(app.locations)}
+                            </p>
+                          </div>
+                        ) : null}
+                        {app.useUniquePin && app.pin ? (
+                          <div>
+                            <p className="typography-body-md-emphasized text-neutral-default">PIN</p>
+                            <p className="typography-body-sm text-neutral-default">Unique PIN set</p>
                           </div>
                         ) : null}
                       </div>
