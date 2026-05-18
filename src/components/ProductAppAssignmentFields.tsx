@@ -7,19 +7,20 @@ import {
   Select,
 } from '@lightspeed/unified-components-helios-theme/react'
 
+function locationMode(productLine: ProductLineConfig, appId: string): 'multi' | 'none' {
+  if (productLine.locationFieldMode) {
+    const mode = productLine.locationFieldMode(appId)
+    return mode === 'multi' ? 'multi' : 'none'
+  }
+  return productLine.appSupportsLocations(appId) ? 'multi' : 'none'
+}
+
 export type ProductAppAssignmentFieldsProps = {
   app: ProductAppRow
   productLine: ProductLineConfig
   fieldIdPrefix: string
   onChange: (next: ProductAppRow) => void
   includeEcomMarketing?: boolean
-}
-
-function locationMode(productLine: ProductLineConfig, appId: string) {
-  if (productLine.locationFieldMode) {
-    return productLine.locationFieldMode(appId)
-  }
-  return productLine.appSupportsLocations(appId) ? 'multi' : 'none'
 }
 
 export function ProductAppAssignmentFields({
@@ -47,25 +48,9 @@ export function ProductAppAssignmentFields({
             />
           </Field>
         </div>
-        {locMode === 'single' ? (
-          <div className="min-w-[200px] flex-1">
-            <Field labelSlot="Location" required size="medium">
-              <Select
-                size="medium"
-                labelLayout="outside"
-                placeholder="Select location"
-                options={[...productLine.locationOptionsSection[0]!.items]}
-                value={app.locations[0]}
-                onChange={(opt) =>
-                  onChange({ ...app, locations: opt?.value ? [opt.value] : [] })
-                }
-              />
-            </Field>
-          </div>
-        ) : null}
         {locMode === 'multi' ? (
           <div className="min-w-[200px] flex-1">
-            <Field labelSlot="Location" required size="medium">
+            <Field labelSlot="Locations" required size="medium">
               <MultiSelect
                 id={`${fieldIdPrefix}-${app.id}-locations`}
                 size="medium"

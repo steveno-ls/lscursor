@@ -1,10 +1,22 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { AppRowThumbnail } from './components/AppRowThumbnail'
 import {
   clearedAppAssignment,
   ProductAppAssignmentFields,
 } from './components/ProductAppAssignmentFields'
-import type { ProductAppRow, ProfileAccessKey, UserProfileUser } from './config/types'
+import type {
+  ProductAppRow,
+  ProfileAccessKey,
+  UserProfileDetail,
+  UserProfileUser,
+  UserRow,
+} from './config/types'
+import {
+  buildProfileDetailFromForm,
+  buildUserRowFromProfile,
+  cloneProfileDetail,
+  profileDetailsEqual,
+} from './utils/profileForm'
 import { useProductLine } from './context/ProductLineContext'
 import {
   Badge,
@@ -61,16 +73,23 @@ const PROFILE_ACCESS_TITLE = Object.fromEntries(
 
 const APP_CARD_CONTENT_CLASSES = ['flex', 'flex-col', 'gap-4'] as const
 
-export type UserProfilePageProps = {
-  user: UserProfileUser
-  onBack: () => void
+export type UserProfileSaveResult = {
+  row: UserRow
+  profile: UserProfileDetail
 }
 
-export function UserProfilePage({ user, onBack }: UserProfilePageProps) {
+export type UserProfilePageProps = {
+  user: UserProfileUser
+  initialProfile?: UserProfileDetail
+  onBack: () => void
+  onSave?: (result: UserProfileSaveResult) => void
+}
+
+export function UserProfilePage({ user, initialProfile, onBack, onSave }: UserProfilePageProps) {
   const productLine = useProductLine()
   const seed = useMemo(
-    () => productLine.createProfileDetailForUser(user),
-    [productLine, user],
+    () => initialProfile ?? productLine.createProfileDetailForUser(user),
+    [initialProfile, productLine, user],
   )
 
   const [firstName, setFirstName] = useState(seed.firstName)
@@ -80,11 +99,56 @@ export function UserProfilePage({ user, onBack }: UserProfilePageProps) {
   const [apps, setApps] = useState<ProductAppRow[]>(() =>
     seed.apps.map((a) => ({ ...a, locations: [...a.locations] })),
   )
+  const [savedProfile, setSavedProfile] = useState<UserProfileDetail>(() => cloneProfileDetail(seed))
 
   const fullName = `${firstName} ${lastName}`.trim() || user.name
   const includeEcomMarketing = user.id === '4'
 
   const accessHeadingId = 'user-profile-access-heading'
+
+  const currentProfile = useMemo(
+    () =>
+      buildProfileDetailFromForm(
+        { firstName, lastName, email, accessKey, apps },
+        savedProfile.summarySecondary,
+      ),
+    [firstName, lastName, email, accessKey, apps, savedProfile.summarySecondary],
+  )
+
+  const hasChanges = useMemo(
+    () => !profileDetailsEqual(currentProfile, savedProfile),
+    [currentProfile, savedProfile],
+  )
+
+  const handleSave = useCallback(() => {
+    const profile = buildProfileDetailFromForm(
+      { firstName, lastName, email, accessKey, apps },
+      user.subtitle.includes('@') && !email.includes('@')
+        ? user.subtitle
+        : email.includes('@')
+          ? email
+          : savedProfile.summarySecondary,
+    )
+    const row = buildUserRowFromProfile(user, profile, productLine.appTemplates)
+
+    if (hasChanges) {
+      onSave?.({ row, profile })
+      setSavedProfile(cloneProfileDetail(profile))
+    }
+    onBack()
+  }, [
+    firstName,
+    lastName,
+    email,
+    accessKey,
+    apps,
+    user,
+    hasChanges,
+    onSave,
+    onBack,
+    productLine.appTemplates,
+    savedProfile.summarySecondary,
+  ])
 
   return (
     <div className="mx-auto flex w-full max-w-[1100px] flex-col gap-10 px-4 pb-12 font-general sm:px-0">
@@ -122,7 +186,7 @@ export function UserProfilePage({ user, onBack }: UserProfilePageProps) {
           type="button"
           appearance="primary"
           size="medium"
-          onClick={onBack}
+          onClick={handleSave}
           customClasses={{ container: ['shrink-0', 'self-start'] }}
         >
           Save
@@ -325,7 +389,7 @@ export function UserProfilePage({ user, onBack }: UserProfilePageProps) {
                       }
                       customClasses={{ container: ['shrink-0'] }}
                     >
-                      {productLine.removeProductLabel ?? 'Remove product'}
+                      {productLine.removeProductLabel ?? 'Remove app'}
                     </Button>
                   ) : (
                     <Button
@@ -349,7 +413,7 @@ export function UserProfilePage({ user, onBack }: UserProfilePageProps) {
                       }
                       customClasses={{ container: ['shrink-0'] }}
                     >
-                      {productLine.assignProductLabel ?? 'Assign product'}
+                      {productLine.assignProductLabel ?? 'Assign app'}
                     </Button>
                   )}
                 </div>

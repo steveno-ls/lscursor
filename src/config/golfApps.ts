@@ -1,20 +1,23 @@
 import type { SelectOption } from './types'
 
 export const GOLF_LOCATION_OPTIONS: SelectOption[] = [
-  { value: 'florida', label: 'Florida' },
+  { value: 'naples', label: 'Naples' },
+  { value: 'orlando', label: 'Orlando' },
+  { value: 'ponte vedra beach', label: 'Florida' },
 ]
 
 export const GOLF_LOCATION_OPTIONS_SECTION = [{ items: [...GOLF_LOCATION_OPTIONS] }]
 
 const RETAIL_R_ROLES: SelectOption[] = [
-  { value: 'cashier', label: 'Cashier' },
+  { value: 'associate', label: 'Associate' },
   { value: 'manager', label: 'Manager' },
   { value: 'admin', label: 'Admin' },
+  { value: 'owner', label: 'Owner' },
 ]
 
 const ECOM_C_ROLES: SelectOption[] = [
-  { value: 'designer', label: 'Designer' },
-  { value: 'manager', label: 'Manager' },
+  { value: 'viewer', label: 'Viewer' },
+  { value: 'editor', label: 'Editor' },
   { value: 'admin', label: 'Admin' },
 ]
 
@@ -38,8 +41,8 @@ const ROLE_OPTIONS_BY_APP_ID: Record<string, readonly SelectOption[]> = {
   golf: GOLF_APP_ROLES,
 }
 
-/** Apps that show a single location dropdown (not multi-select). */
-export const GOLF_SINGLE_LOCATION_APP_IDS = new Set([
+/** Apps that require one or more locations (multi-select). */
+export const GOLF_LOCATION_APP_IDS = new Set([
   'retail-r',
   'hospitality-k',
   'golf',

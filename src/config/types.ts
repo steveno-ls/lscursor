@@ -23,7 +23,7 @@ export type ProductAppRow = {
   productLine: string
   assigned: boolean
   role: string
-  /** Used when `locationFieldMode` is `single` or `multi` for this app id. */
+  /** Location values when the app uses multi-select locations. */
   locations: string[]
   /** Retail (R-Series) golf: optional unique PIN per employee. */
   useUniquePin?: boolean

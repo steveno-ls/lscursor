@@ -4,8 +4,12 @@ import {
   clearedAppAssignment,
   ProductAppAssignmentFields,
 } from './components/ProductAppAssignmentFields'
-import type { ProductAppRow } from './config/types'
+import type { ProductAppRow, UserRow } from './config/types'
 import { useProductLine } from './context/ProductLineContext'
+import {
+  createUserFromWizard,
+  type CreatedUserResult,
+} from './utils/createUserFromWizard'
 import {
   Badge,
   Button,
@@ -27,8 +31,12 @@ import {
   UserThumbnail,
 } from '@lightspeed/unified-components-helios-theme/react'
 
+export type { CreatedUserResult }
+
 export type AddUserWizardProps = {
   onClose: () => void
+  existingUsers: UserRow[]
+  onUserCreated: (result: CreatedUserResult) => void
 }
 
 type WizardStep = 'access' | 'profile' | 'success'
@@ -128,7 +136,11 @@ function generateTemporaryPassword(): string {
 /** Standalone product cards (not CardStack): keep default Card border/padding; stack rows in content. */
 const APP_CARD_CONTENT_CLASSES = ['flex', 'flex-col', 'gap-4'] as const
 
-export function AddUserWizard({ onClose }: AddUserWizardProps) {
+export function AddUserWizard({
+  onClose,
+  existingUsers,
+  onUserCreated,
+}: AddUserWizardProps) {
   const productLine = useProductLine()
   const [step, setStep] = useState<WizardStep>('access')
   const [accessKey, setAccessKey] = useState<AccessKey>('staff')
@@ -226,6 +238,19 @@ export function AddUserWizard({ onClose }: AddUserWizardProps) {
       return
     }
     setProfileSaveAttempted(false)
+    onUserCreated(
+      createUserFromWizard({
+        existingUsers,
+        appTemplates: productLine.appTemplates,
+        firstName,
+        lastName,
+        email,
+        accountMode,
+        username,
+        accessKey,
+        apps,
+      }),
+    )
     setStep('success')
   }
 
@@ -432,7 +457,7 @@ export function AddUserWizard({ onClose }: AddUserWizardProps) {
                             }
                             customClasses={{ container: ['shrink-0'] }}
                           >
-                            {productLine.removeProductLabel ?? 'Remove product'}
+                            {productLine.removeProductLabel ?? 'Remove app'}
                           </Button>
                         ) : (
                           <Button
@@ -458,7 +483,7 @@ export function AddUserWizard({ onClose }: AddUserWizardProps) {
                             }
                             customClasses={{ container: ['shrink-0'] }}
                           >
-                            {productLine.assignProductLabel ?? 'Assign product'}
+                            {productLine.assignProductLabel ?? 'Assign app'}
                           </Button>
                         )}
                       </div>
@@ -815,9 +840,7 @@ export function AddUserWizard({ onClose }: AddUserWizardProps) {
                         {productLine.appSupportsLocations(app.id) ? (
                           <div>
                             <p className="typography-body-md-emphasized text-neutral-default">
-                              {productLine.locationFieldMode?.(app.id) === 'single'
-                                ? 'Location'
-                                : 'Locations'}
+                              Locations
                             </p>
                             <p className="typography-body-sm text-neutral-default">
                               {productLine.locationLabels(app.locations)}

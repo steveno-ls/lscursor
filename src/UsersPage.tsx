@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
-import { AddUserWizard } from './AddUserWizard'
+import { AddUserWizard, type CreatedUserResult } from './AddUserWizard'
 import { useProductLine } from './context/ProductLineContext'
-import type { UserRow } from './config/types'
+import type { UserProfileDetail, UserRow } from './config/types'
 import { UserProfilePage } from './UserProfilePage'
 import {
   Button,
@@ -32,6 +32,16 @@ const ACCESS_FILTER_OPTIONS = [
   { value: 'Area Lead', label: 'Area Lead' },
 ]
 
+function isOwnerAccess(accountAccess: string): boolean {
+  return accountAccess.trim().toLowerCase() === 'owner'
+}
+
+function initialEnabledById(users: UserRow[]): Record<string, boolean> {
+  return Object.fromEntries(
+    users.map((u) => [u.id, isOwnerAccess(u.accountAccess) ? true : u.enabled]),
+  )
+}
+
 function formatMultiFilterLabel(
   base: string,
   selected: string[],
@@ -46,15 +56,31 @@ function formatMultiFilterLabel(
 }
 
 export function UsersPage() {
-  const { users, appFilterOptions } = useProductLine()
+  const productLine = useProductLine()
+  const { appFilterOptions } = productLine
+  const [users, setUsers] = useState<UserRow[]>(() => [...productLine.users])
+  const [createdProfilesByUserId, setCreatedProfilesByUserId] = useState<
+    Record<string, UserProfileDetail>
+  >({})
   const [profileUserId, setProfileUserId] = useState<string | null>(null)
   const [addUserOpen, setAddUserOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [appsFilter, setAppsFilter] = useState<string[]>([])
   const [accessFilter, setAccessFilter] = useState<string[]>([])
   const [enabledById, setEnabledById] = useState<Record<string, boolean>>(() =>
-    Object.fromEntries(users.map((u) => [u.id, u.enabled])),
+    initialEnabledById(productLine.users),
   )
+
+  const handleUserCreated = (result: CreatedUserResult) => {
+    setUsers((prev) => [...prev, result.row])
+    setCreatedProfilesByUserId((prev) => ({ ...prev, [result.row.id]: result.profile }))
+    setEnabledById((prev) => ({ ...prev, [result.row.id]: result.row.enabled }))
+  }
+
+  const handleProfileSave = (result: CreatedUserResult) => {
+    setUsers((prev) => prev.map((u) => (u.id === result.row.id ? result.row : u)))
+    setCreatedProfilesByUserId((prev) => ({ ...prev, [result.row.id]: result.profile }))
+  }
 
   const appsLabel = formatMultiFilterLabel('Applications', appsFilter, appFilterOptions)
   const accessLabel = formatMultiFilterLabel('Access level', accessFilter, ACCESS_FILTER_OPTIONS)
@@ -189,7 +215,11 @@ export function UsersPage() {
   if (addUserOpen) {
     return (
       <div className="flex w-full justify-center">
-        <AddUserWizard onClose={() => setAddUserOpen(false)} />
+        <AddUserWizard
+          existingUsers={users}
+          onUserCreated={handleUserCreated}
+          onClose={() => setAddUserOpen(false)}
+        />
       </div>
     )
   }
@@ -198,7 +228,12 @@ export function UsersPage() {
   if (profileUser) {
     return (
       <div className="flex w-full justify-center">
-        <UserProfilePage user={profileUser} onBack={() => setProfileUserId(null)} />
+        <UserProfilePage
+          user={profileUser}
+          initialProfile={createdProfilesByUserId[profileUser.id]}
+          onSave={handleProfileSave}
+          onBack={() => setProfileUserId(null)}
+        />
       </div>
     )
   }
@@ -240,7 +275,9 @@ export function UsersPage() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {rows.map((row) => (
+            {rows.map((row) => {
+              const isOwner = isOwnerAccess(row.accountAccess)
+              return (
               <TableRow key={row.id} rowKey={row.id}>
                 <TableCell>
                   <button
@@ -272,17 +309,19 @@ export function UsersPage() {
                 <TableCell align="end">
                   <Switch
                     size="medium"
-                    checked={enabledById[row.id]}
-                    onChange={(checked) =>
+                    checked={isOwner ? true : enabledById[row.id]}
+                    disabled={isOwner}
+                    onChange={(checked) => {
+                      if (isOwner) return
                       setEnabledById((prev) => ({ ...prev, [row.id]: checked }))
-                    }
+                    }}
                     customClasses={{ label: ['sr-only'] }}
                   >
                     {`Enabled for ${row.name}`}
                   </Switch>
                 </TableCell>
               </TableRow>
-            ))}
+            )})}
           </TableBody>
         </Table>
     </div>

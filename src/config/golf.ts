@@ -1,7 +1,7 @@
 import {
   GOLF_LOCATION_OPTIONS_SECTION,
   GOLF_PIN_APP_IDS,
-  GOLF_SINGLE_LOCATION_APP_IDS,
+  GOLF_LOCATION_APP_IDS,
   golfLocationLabels,
   golfRoleLabelFor,
   golfRoleOptionsForApp,
@@ -25,35 +25,35 @@ export const GOLF_APP_TEMPLATES: AppTemplate[] = [
   {
     id: 'retail-r',
     listLabel: 'Retail',
-    shop: 'Send Away Golf Shop',
+    shop: 'Tee-Off Titans',
     productLine: 'Retail (R-Series)',
     thumbSrc: ICON_RETAIL_ECOM,
   },
   {
     id: 'ecom-c',
     listLabel: 'eCom',
-    shop: 'Send Away Golf Shop',
+    shop: 'Tee-Off Titans',
     productLine: 'eCom (C-Series)',
     thumbSrc: ICON_RETAIL_ECOM,
   },
   {
     id: 'hospitality-k',
     listLabel: 'Hospitality',
-    shop: 'Send Away Golf Restuarant',
+    shop: 'Tee-Off Titans',
     productLine: 'Hospitality (K-Series)',
     thumbSrc: ICON_HOSPITALITY,
   },
   {
     id: 'hospitality-backoffice',
     listLabel: 'Hospitality back office',
-    shop: 'Send Away Golf Restuarant',
+    shop: 'Tee-Off Titans',
     productLine: 'Hospitality back office (K-Series)',
     thumbSrc: ICON_HOSPITALITY,
   },
   {
     id: 'golf',
     listLabel: 'Golf',
-    shop: 'Send Away Golf',
+    shop: 'Tee-Off Titans',
     productLine: 'Golf',
     thumbSrc: ICON_GOLF,
   },
@@ -68,7 +68,7 @@ export const GOLF_USERS: UserRow[] = [
   {
     id: '1',
     name: 'Brandon Rogers',
-    subtitle: 'brandon.rodgers@sendawaygolf.com',
+    subtitle: 'brandon.rodgers@teeofftitans.com',
     apps: 'Retail, eCom, Golf',
     accountAccess: 'Admin',
     lastActive: 'Today',
@@ -95,7 +95,7 @@ export const GOLF_USERS: UserRow[] = [
   {
     id: '4',
     name: 'John Wickershire',
-    subtitle: 'john.wick@sendawaygolf.com',
+    subtitle: 'john.wick@teeofftitans.com',
     apps: 'Retail, eCom, Hospitality, Hospitality back office, Golf',
     accountAccess: 'Owner',
     lastActive: 'Yesterday',
@@ -104,7 +104,7 @@ export const GOLF_USERS: UserRow[] = [
   {
     id: '5',
     name: 'Sarah Turner',
-    subtitle: 'sarah.turner@sendawaygolf.com',
+    subtitle: 'sarah.turner@teeofftitans.com',
     apps: 'Hospitality, Golf',
     accountAccess: 'Area Lead',
     lastActive: 'Today',
@@ -116,32 +116,32 @@ const GOLF_PROFILES_BY_USER_ID: Record<string, UserProfileDetail> = {
   '1': {
     firstName: 'Brandon',
     lastName: 'Rogers',
-    email: 'brandon.rodgers@sendawaygolf.com',
-    summarySecondary: 'brandon.rodgers@sendawaygolf.com',
+    email: 'brandon.rodgers@teeofftitans.com',
+    summarySecondary: 'brandon.rodgers@teeofftitans.com',
     accessKey: 'admin',
     apps: [
       {
         id: 'retail-r',
-        shop: 'Send Away Golf Shop',
+        shop: 'Tee-Off Titans',
         productLine: 'Retail (R-Series)',
         assigned: true,
-        role: 'cashier',
-        locations: ['florida'],
+        role: 'admin',
+        locations: ['naples', 'orlando'],
         useUniquePin: true,
         pin: '1234',
         pinConfirm: '1234',
       },
       {
         id: 'ecom-c',
-        shop: 'Send Away Golf Shop',
+        shop: 'Tee-Off Titans',
         productLine: 'eCom (C-Series)',
         assigned: true,
-        role: 'designer',
+        role: 'editor',
         locations: [],
       },
       {
         id: 'hospitality-k',
-        shop: 'Send Away Golf Restuarant',
+        shop: 'Tee-Off Titans',
         productLine: 'Hospitality (K-Series)',
         assigned: false,
         role: '',
@@ -149,7 +149,7 @@ const GOLF_PROFILES_BY_USER_ID: Record<string, UserProfileDetail> = {
       },
       {
         id: 'hospitality-backoffice',
-        shop: 'Send Away Golf Restuarant',
+        shop: 'Tee-Off Titans',
         productLine: 'Hospitality back office (K-Series)',
         assigned: false,
         role: '',
@@ -157,35 +157,35 @@ const GOLF_PROFILES_BY_USER_ID: Record<string, UserProfileDetail> = {
       },
       {
         id: 'golf',
-        shop: 'Send Away Golf',
+        shop: 'Tee-Off Titans',
         productLine: 'Golf',
         assigned: true,
-        role: 'assistant',
-        locations: ['florida'],
+        role: 'manager',
+        locations: ['orlando', 'ponte vedra beach'],
       },
     ],
   },
   '2': {
     firstName: 'Dixie',
     lastName: 'Matrix',
-    email: 'dmatrix@sendawaygolf.com',
+    email: 'dmatrix@teeofftitans.com',
     summarySecondary: 'DMatrix01',
     accessKey: 'site_lead',
     apps: [
       {
         id: 'retail-r',
-        shop: 'Send Away Golf Shop',
+        shop: 'Tee-Off Titans',
         productLine: 'Retail (R-Series)',
         assigned: true,
         role: 'manager',
-        locations: ['florida'],
+        locations: ['naples', 'orlando'],
         useUniquePin: false,
         pin: '',
         pinConfirm: '',
       },
       {
         id: 'ecom-c',
-        shop: 'Send Away Golf Shop',
+        shop: 'Tee-Off Titans',
         productLine: 'eCom (C-Series)',
         assigned: false,
         role: '',
@@ -193,15 +193,15 @@ const GOLF_PROFILES_BY_USER_ID: Record<string, UserProfileDetail> = {
       },
       {
         id: 'hospitality-k',
-        shop: 'Send Away Golf Restuarant',
+        shop: 'Tee-Off Titans',
         productLine: 'Hospitality (K-Series)',
         assigned: true,
         role: 'waiter',
-        locations: ['florida'],
+        locations: ['ponte vedra beach', 'naples'],
       },
       {
         id: 'hospitality-backoffice',
-        shop: 'Send Away Golf Restuarant',
+        shop: 'Tee-Off Titans',
         productLine: 'Hospitality back office (K-Series)',
         assigned: false,
         role: '',
@@ -209,11 +209,167 @@ const GOLF_PROFILES_BY_USER_ID: Record<string, UserProfileDetail> = {
       },
       {
         id: 'golf',
-        shop: 'Send Away Golf',
+        shop: 'Tee-Off Titans',
         productLine: 'Golf',
         assigned: false,
         role: '',
         locations: [],
+      },
+    ],
+  },
+  '3': {
+    firstName: 'Jenna',
+    lastName: 'Kahn',
+    email: 'jkahn@teeofftitans.com',
+    summarySecondary: 'JKahn01',
+    accessKey: 'staff',
+    apps: [
+      {
+        id: 'retail-r',
+        shop: 'Tee-Off Titans',
+        productLine: 'Retail (R-Series)',
+        assigned: false,
+        role: '',
+        locations: [],
+        useUniquePin: false,
+        pin: '',
+        pinConfirm: '',
+      },
+      {
+        id: 'ecom-c',
+        shop: 'Tee-Off Titans',
+        productLine: 'eCom (C-Series)',
+        assigned: false,
+        role: '',
+        locations: [],
+      },
+      {
+        id: 'hospitality-k',
+        shop: 'Tee-Off Titans',
+        productLine: 'Hospitality (K-Series)',
+        assigned: false,
+        role: '',
+        locations: [],
+      },
+      {
+        id: 'hospitality-backoffice',
+        shop: 'Tee-Off Titans',
+        productLine: 'Hospitality back office (K-Series)',
+        assigned: false,
+        role: '',
+        locations: [],
+      },
+      {
+        id: 'golf',
+        shop: 'Tee-Off Titans',
+        productLine: 'Golf',
+        assigned: true,
+        role: 'assistant',
+        locations: ['naples'],
+      },
+    ],
+  },
+  '4': {
+    firstName: 'John',
+    lastName: 'Wickershire',
+    email: 'john.wick@teeofftitans.com',
+    summarySecondary: 'john.wick@teeofftitans.com',
+    accessKey: 'owner',
+    apps: [
+      {
+        id: 'retail-r',
+        shop: 'Tee-Off Titans',
+        productLine: 'Retail (R-Series)',
+        assigned: true,
+        role: 'owner',
+        locations: ['naples', 'orlando', 'ponte vedra beach'],
+        useUniquePin: true,
+        pin: '5678',
+        pinConfirm: '5678',
+      },
+      {
+        id: 'ecom-c',
+        shop: 'Tee-Off Titans',
+        productLine: 'eCom (C-Series)',
+        assigned: true,
+        role: 'admin',
+        locations: [],
+      },
+      {
+        id: 'hospitality-k',
+        shop: 'Tee-Off Titans',
+        productLine: 'Hospitality (K-Series)',
+        assigned: true,
+        role: 'manager',
+        locations: ['orlando', 'naples'],
+      },
+      {
+        id: 'hospitality-backoffice',
+        shop: 'Tee-Off Titans',
+        productLine: 'Hospitality back office (K-Series)',
+        assigned: true,
+        role: 'admin',
+        locations: [],
+      },
+      {
+        id: 'golf',
+        shop: 'Tee-Off Titans',
+        productLine: 'Golf',
+        assigned: true,
+        role: 'admin',
+        locations: ['naples', 'orlando', 'ponte vedra beach'],
+      },
+    ],
+  },
+  '5': {
+    firstName: 'Sarah',
+    lastName: 'Turner',
+    email: 'sarah.turner@teeofftitans.com',
+    summarySecondary: 'sarah.turner@teeofftitans.com',
+    accessKey: 'area_lead',
+    apps: [
+      {
+        id: 'retail-r',
+        shop: 'Tee-Off Titans',
+        productLine: 'Retail (R-Series)',
+        assigned: false,
+        role: '',
+        locations: [],
+        useUniquePin: false,
+        pin: '',
+        pinConfirm: '',
+      },
+      {
+        id: 'ecom-c',
+        shop: 'Tee-Off Titans',
+        productLine: 'eCom (C-Series)',
+        assigned: false,
+        role: '',
+        locations: [],
+      },
+      {
+        id: 'hospitality-k',
+        shop: 'Tee-Off Titans',
+        productLine: 'Hospitality (K-Series)',
+        assigned: true,
+        role: 'waiter',
+        locations: ['naples', 'orlando'],
+      },
+      {
+        id: 'hospitality-backoffice',
+        shop: 'Tee-Off Titans',
+        productLine: 'Hospitality back office (K-Series)',
+        assigned: false,
+        role: '',
+        locations: [],
+      },
+      {
+        id: 'golf',
+        shop: 'Tee-Off Titans',
+        productLine: 'Golf',
+        assigned: true,
+        role: 'assistant',
+        locations: ['orlando', 'ponte vedra beach'],
       },
     ],
   },
@@ -255,11 +411,18 @@ function createDefaultApps(): ProductAppRow[] {
 }
 
 function defaultRoleForApp(appId: string): string {
-  if (appId === 'retail-r') return 'cashier'
-  if (appId === 'ecom-c') return 'designer'
+  if (appId === 'retail-r') return 'associate'
+  if (appId === 'ecom-c') return 'viewer'
   if (appId === 'hospitality-k' || appId === 'hospitality-backoffice') return 'waiter'
   if (appId === 'golf') return 'assistant'
   return ''
+}
+
+function defaultLocationForApp(appId: string): string {
+  if (appId === 'retail-r') return 'naples'
+  if (appId === 'hospitality-k') return 'orlando'
+  if (appId === 'golf') return 'naples'
+  return 'naples'
 }
 
 function createProfileDetailForUser(user: UserProfileUser): UserProfileDetail {
@@ -280,7 +443,9 @@ function createProfileDetailForUser(user: UserProfileUser): UserProfileDetail {
       assigned,
       role: assigned ? defaultRoleForApp(template.id) : '',
       locations:
-        assigned && GOLF_SINGLE_LOCATION_APP_IDS.has(template.id) ? ['florida'] : [],
+        assigned && GOLF_LOCATION_APP_IDS.has(template.id)
+          ? [defaultLocationForApp(template.id)]
+          : [],
       useUniquePin: false,
       pin: '',
       pinConfirm: '',
@@ -292,7 +457,7 @@ function createProfileDetailForUser(user: UserProfileUser): UserProfileDetail {
     lastName,
     email: user.subtitle.includes('@')
       ? user.subtitle
-      : `${user.subtitle.toLowerCase()}@sendawaygolf.com`,
+      : `${user.subtitle.toLowerCase()}@teeofftitans.com`,
     summarySecondary: user.subtitle,
     accessKey,
     apps,
@@ -300,13 +465,13 @@ function createProfileDetailForUser(user: UserProfileUser): UserProfileDetail {
 }
 
 function locationFieldMode(appId: string): LocationFieldMode {
-  if (GOLF_SINGLE_LOCATION_APP_IDS.has(appId)) return 'single'
+  if (GOLF_LOCATION_APP_IDS.has(appId)) return 'multi'
   return 'none'
 }
 
 function isAssignedAppConfigured(app: ProductAppRow): boolean {
   if (!app.assigned || !app.role.trim()) return false
-  if (GOLF_SINGLE_LOCATION_APP_IDS.has(app.id) && app.locations.length === 0) return false
+  if (GOLF_LOCATION_APP_IDS.has(app.id) && app.locations.length === 0) return false
   if (GOLF_PIN_APP_IDS.has(app.id) && app.useUniquePin) {
     if (!app.pin?.trim() || !app.pinConfirm?.trim()) return false
     if (app.pin !== app.pinConfirm) return false
@@ -331,7 +496,7 @@ export const golfConfig: ProductLineConfig = {
   roleOptionsForApp: golfRoleOptionsForApp,
   locationOptionsSection: GOLF_LOCATION_OPTIONS_SECTION,
   locationFieldMode,
-  appSupportsLocations: (appId) => GOLF_SINGLE_LOCATION_APP_IDS.has(appId),
+  appSupportsLocations: (appId) => GOLF_LOCATION_APP_IDS.has(appId),
   appSupportsPin: (appId) => GOLF_PIN_APP_IDS.has(appId),
   parseAppsFromList,
   createDefaultApps,
