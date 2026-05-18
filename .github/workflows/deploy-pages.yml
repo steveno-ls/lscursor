@@ -73,6 +73,10 @@ jobs:
       - name: Production build
         run: npm run build
 
+      # GitHub Pages has no server-side router; serve index.html for unknown paths (e.g. /lscursor/golf).
+      - name: Verify SPA fallback (404.html)
+        run: test -f dist/404.html
+
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
