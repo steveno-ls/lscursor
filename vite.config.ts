@@ -7,4 +7,11 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   base: '/lscursor/',
   plugins: [react()],
+  server: {
+    watch: {
+      // Paths with spaces (e.g. "Playground V2") can miss saves on macOS without polling.
+      usePolling: true,
+      interval: 300,
+    },
+  },
 })

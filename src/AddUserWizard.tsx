@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   Badge,
   Button,
@@ -7,6 +7,7 @@ import {
   Field,
   IconArrowBackIosNew20,
   IconCheckCircle20,
+  IconContentCopy20,
   IconUpload20,
   Input,
   Link,
@@ -27,7 +28,7 @@ export type AddUserWizardProps = {
 
 type WizardStep = 'access' | 'profile' | 'success'
 
-type AccessKey = 'default' | 'site_lead' | 'area_lead' | 'admin'
+type AccessKey = 'staff' | 'site_lead' | 'area_lead' | 'admin'
 
 const ACCESS_OPTIONS: {
   value: AccessKey
@@ -36,33 +37,33 @@ const ACCESS_OPTIONS: {
   defaultBadge?: boolean
 }[] = [
   {
-    value: 'default',
-    title: 'Default',
-    description: 'Can update their profile details and password.',
+    value: 'staff',
+    title: 'Staff',
+    description: 'Can update their own profile and password only.',
     defaultBadge: true,
   },
   {
     value: 'site_lead',
     title: 'Site lead',
     description:
-      'Can manage Default users and give account and product roles below them, within their given locations and products below.',
+      'Can manage Staff with the same products, within their assigned locations.',
   },
   {
     value: 'area_lead',
     title: 'Area lead',
     description:
-      'Can manage Site leads and Default users and give account and product roles below them across any location, within their given products below.',
+      'Can manage Site lead and Staff with the same products, across all locations.',
   },
   {
     value: 'admin',
     title: 'Admin',
     description:
-      'Can manage all roles and users across any location and products below, except Owners.',
+      'Can manage all users, products, and locations (except Owners).',
   },
 ]
 
 const ACCESS_TITLE: Record<AccessKey, string> = {
-  default: 'Default',
+  staff: 'Staff',
   site_lead: 'Site lead',
   area_lead: 'Area lead',
   admin: 'Admin',
@@ -84,7 +85,7 @@ function createDefaultApps(): AppRow[] {
   return [
     {
       id: 'retail',
-      shop: 'The Continental',
+      shop: 'The Continental Gift Shop',
       productLine: 'Retail (X-Series)',
       assigned: false,
       role: '',
@@ -100,7 +101,7 @@ function createDefaultApps(): AppRow[] {
     },
     {
       id: 'wholesale',
-      shop: 'The Continental',
+      shop: 'The Continental Gift Shop',
       productLine: 'Wholesale',
       assigned: false,
       role: '',
@@ -129,6 +130,35 @@ function AppRowThumbnail() {
 function usernameShowsValidIndicator(value: string): boolean {
   const t = value.trim()
   return /^[a-zA-Z0-9._-]{3,}$/.test(t)
+}
+
+function formatLoginDetailsForCopy(username: string, password: string): string {
+  return `Username: ${username}\nPassword: ${password}`
+}
+
+async function copyTextToClipboard(text: string): Promise<boolean> {
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text)
+      return true
+    }
+  } catch {
+    /* fall through to legacy copy */
+  }
+  try {
+    const textarea = document.createElement('textarea')
+    textarea.value = text
+    textarea.setAttribute('readonly', '')
+    textarea.style.position = 'fixed'
+    textarea.style.left = '-9999px'
+    document.body.appendChild(textarea)
+    textarea.select()
+    const copied = document.execCommand('copy')
+    document.body.removeChild(textarea)
+    return copied
+  } catch {
+    return false
+  }
 }
 
 function generateTemporaryPassword(): string {
@@ -197,25 +227,12 @@ function isAssignedAppConfigured(app: AppRow): boolean {
   return true
 }
 
-/** Each app row is a Helios `Card`; padding lives on `content` so children stay in `data-part="content"`. */
-const APP_ROW_CARD_CLASSES = {
-  container: ['w-full', 'min-h-0', 'p-0', 'gap-0', 'shadow-none'],
-  content: [
-    'mr-0',
-    'flex',
-    'w-full',
-    'min-w-0',
-    'flex-col',
-    'gap-4',
-    'p-6',
-    'text-left',
-    'typography-body-sm',
-  ],
-} as const
+/** Standalone product cards (not CardStack): keep default Card border/padding; stack rows in content. */
+const APP_CARD_CONTENT_CLASSES = ['flex', 'flex-col', 'gap-4'] as const
 
 export function AddUserWizard({ onClose }: AddUserWizardProps) {
   const [step, setStep] = useState<WizardStep>('access')
-  const [accessKey, setAccessKey] = useState<AccessKey>('default')
+  const [accessKey, setAccessKey] = useState<AccessKey>('staff')
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [email, setEmail] = useState('')
@@ -224,12 +241,27 @@ export function AddUserWizard({ onClose }: AddUserWizardProps) {
   const [password, setPassword] = useState('')
   const [apps, setApps] = useState<AppRow[]>(() => createDefaultApps())
   const [profileSaveAttempted, setProfileSaveAttempted] = useState(false)
+  const [loginDetailsCopied, setLoginDetailsCopied] = useState(false)
+  const firstNameFieldRef = useRef<HTMLDivElement>(null)
+  const loginDetailsCopiedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const profileFirstNameFocusedRef = useRef(false)
 
   const fullName = useMemo(() => `${firstName} ${lastName}`.trim(), [firstName, lastName])
 
+  useEffect(() => {
+    if (step !== 'profile' || profileFirstNameFocusedRef.current) return
+    profileFirstNameFocusedRef.current = true
+    const frame = requestAnimationFrame(() => {
+      firstNameFieldRef.current
+        ?.querySelector<HTMLInputElement>('input:not([type="hidden"])')
+        ?.focus()
+    })
+    return () => cancelAnimationFrame(frame)
+  }, [step])
+
   const resetWizard = () => {
     setStep('access')
-    setAccessKey('default')
+    setAccessKey('staff')
     setFirstName('')
     setLastName('')
     setEmail('')
@@ -238,6 +270,35 @@ export function AddUserWizard({ onClose }: AddUserWizardProps) {
     setPassword('')
     setApps(createDefaultApps())
     setProfileSaveAttempted(false)
+    setLoginDetailsCopied(false)
+    profileFirstNameFocusedRef.current = false
+    if (loginDetailsCopiedTimeoutRef.current) {
+      clearTimeout(loginDetailsCopiedTimeoutRef.current)
+      loginDetailsCopiedTimeoutRef.current = null
+    }
+  }
+
+  useEffect(() => {
+    return () => {
+      if (loginDetailsCopiedTimeoutRef.current) {
+        clearTimeout(loginDetailsCopiedTimeoutRef.current)
+      }
+    }
+  }, [])
+
+  const handleCopyLoginDetails = async () => {
+    const copied = await copyTextToClipboard(
+      formatLoginDetailsForCopy(username.trim(), password),
+    )
+    if (!copied) return
+    setLoginDetailsCopied(true)
+    if (loginDetailsCopiedTimeoutRef.current) {
+      clearTimeout(loginDetailsCopiedTimeoutRef.current)
+    }
+    loginDetailsCopiedTimeoutRef.current = setTimeout(() => {
+      setLoginDetailsCopied(false)
+      loginDetailsCopiedTimeoutRef.current = null
+    }, 2000)
   }
 
   const handleHeaderBack = () => {
@@ -269,16 +330,16 @@ export function AddUserWizard({ onClose }: AddUserWizardProps) {
     setStep('success')
   }
 
-  const wizardStepIndex = step === 'access' ? 0 : step === 'profile' ? 1 : 2
+  const wizardStepIndex = step === 'access' ? 0 : 1
 
   const handleStepsStepChange = (index: number) => {
     if (index === 0) {
       setProfileSaveAttempted(false)
       setStep('access')
-    } else if (index === 1) {
+    } else {
       setProfileSaveAttempted(false)
       setStep('profile')
-    } else setStep('success')
+    }
   }
 
   return (
@@ -293,53 +354,55 @@ export function AddUserWizard({ onClose }: AddUserWizardProps) {
       <div className="flex min-w-0 w-full flex-col gap-8">
         <div className="relative flex flex-col gap-8">
           {step !== 'success' && (
-            <div className="relative flex min-h-11 items-center">
-              <Button
-                type="button"
-                appearance="ghost"
-                size="medium"
-                onClick={handleHeaderBack}
-                aria-label="Back"
-                customClasses={{
-                  container: [
-                    'absolute',
-                    'right-full',
-                    'top-1/2',
-                    '-translate-y-1/2',
-                    'mr-2',
-                    'shrink-0',
-                  ],
-                }}
+            <div className="flex flex-col gap-2">
+              <div className="relative flex min-h-11 items-center">
+                <Button
+                  type="button"
+                  appearance="ghost"
+                  size="medium"
+                  onClick={handleHeaderBack}
+                  aria-label="Back"
+                  customClasses={{
+                    container: [
+                      'absolute',
+                      'right-full',
+                      'top-1/2',
+                      '-translate-y-1/2',
+                      'mr-2',
+                      'shrink-0',
+                      'w-11',
+                      'min-w-11',
+                    ],
+                  }}
+                >
+                  <IconArrowBackIosNew20 aria-hidden />
+                </Button>
+                <h1 className="typography-heading-lg">Add user</h1>
+              </div>
+              <Steps
+                id="add-user-wizard-steps"
+                count={2}
+                step={wizardStepIndex}
+                orientation="horizontal"
+                onStepChange={handleStepsStepChange}
               >
-                <IconArrowBackIosNew20 aria-hidden />
-              </Button>
-              <h1 className="text-heading-8 text-neutral-default">Add user</h1>
+                <StepList>
+                  <StepItem index={0} labelSlot="Account and product access" />
+                  <StepItem index={1} labelSlot="Setup user" />
+                </StepList>
+              </Steps>
             </div>
           )}
-
-          <Steps
-            id="add-user-wizard-steps"
-            count={3}
-            step={wizardStepIndex}
-            orientation="horizontal"
-            onStepChange={handleStepsStepChange}
-          >
-            <StepList>
-              <StepItem index={0} labelSlot="Account and product access" />
-              <StepItem index={1} labelSlot="Setup user" />
-              <StepItem index={2} labelSlot="User added" />
-            </StepList>
-          </Steps>
 
           {step === 'access' && (
             <>
               <section className="flex flex-col gap-8">
                 <div className="flex flex-col gap-1.5 text-neutral-default">
-                  <h2 id="add-user-assign-access-heading" className="text-heading-6">
-                  How do you want this user to manage others?
+                  <h2 id="add-user-assign-access-heading" className="typography-heading-sm">
+                  What access level do you want to give this user?
                   </h2>
                   <p className="typography-body-sm">
-                  Choose what account role you want to give this user.{' '}
+                  Choose what access level you want to give this user.
                     <Link
                       href="https://design.lightspeedhq.com"
                       target="_blank"
@@ -427,19 +490,15 @@ export function AddUserWizard({ onClose }: AddUserWizardProps) {
                 aria-labelledby="add-user-assign-apps-heading"
               >
                 <div className="flex flex-col gap-1.5 text-neutral-default">
-                  <h2 id="add-user-assign-apps-heading" className="text-heading-6">
-                  What products does this user need to use?
+                  <h2 id="add-user-assign-apps-heading" className="typography-heading-sm">
+                  What applications does this user need to use?
                   </h2>
                   <p className="typography-body-sm">
-                  Assign the products this user can use and configure each one.
+                  Select the applications this user can use and configure each one.
                   </p>
                 </div>
 
-                <CardStack
-                  customClasses={{
-                    container: ['w-full'],
-                  }}
-                >
+                <div className="flex w-full flex-col gap-4">
                   {apps.map((app) => (
                     <Card
                       key={app.id}
@@ -447,8 +506,7 @@ export function AddUserWizard({ onClose }: AddUserWizardProps) {
                       appearance="neutral"
                       size="medium"
                       customClasses={{
-                        container: [...APP_ROW_CARD_CLASSES.container],
-                        content: [...APP_ROW_CARD_CLASSES.content],
+                        content: [...APP_CARD_CONTENT_CLASSES],
                       }}
                     >
                       <div className="flex flex-wrap items-center gap-4">
@@ -475,7 +533,7 @@ export function AddUserWizard({ onClose }: AddUserWizardProps) {
                             }
                             customClasses={{ container: ['shrink-0'] }}
                           >
-                            Remove app
+                            Remove product
                           </Button>
                         ) : (
                           <Button
@@ -493,7 +551,7 @@ export function AddUserWizard({ onClose }: AddUserWizardProps) {
                             }
                             customClasses={{ container: ['shrink-0'] }}
                           >
-                            Assign app
+                            Assign product
                           </Button>
                         )}
                       </div>
@@ -544,7 +602,7 @@ export function AddUserWizard({ onClose }: AddUserWizardProps) {
                       )}
                     </Card>
                   ))}
-                </CardStack>
+                </div>
               </section>
 
               <div className="flex w-full gap-4">
@@ -578,12 +636,12 @@ export function AddUserWizard({ onClose }: AddUserWizardProps) {
             <>
               <section className="flex flex-col gap-6">
                 <div className="flex flex-col gap-1.5 text-neutral-default">
-                  <h2 className="text-heading-6">Setup profile</h2>
+                  <h2 className="typography-heading-sm">Setup profile</h2>
                   <p className="typography-body-sm">Enter basic details for this user</p>
                 </div>
 
                 <div className="flex flex-wrap gap-4">
-                  <div className="min-w-[200px] flex-1">
+                  <div ref={firstNameFieldRef} className="min-w-[200px] flex-1">
                     <Field
                       labelSlot="First name"
                       required
@@ -632,6 +690,7 @@ export function AddUserWizard({ onClose }: AddUserWizardProps) {
                       appearance="default"
                       mediaSlot={<UserThumbnail size="large" userName={fullName || 'User'} />}
                       titleSlot={fullName || 'User name'}
+                      customClasses={{ title: ['font-bold'] }}
                     >
                       {ACCESS_TITLE[accessKey]}
                     </MediaLeftBlockLayout>
@@ -650,7 +709,7 @@ export function AddUserWizard({ onClose }: AddUserWizardProps) {
 
               <section className="flex flex-col gap-6">
                 <div className="flex flex-col gap-1.5 text-neutral-default">
-                  <h2 className="text-heading-6">Setup account</h2>
+                  <h2 className="typography-heading-sm">Setup account</h2>
                   <p className="typography-body-sm">Invite user or create a username and password.</p>
                 </div>
 
@@ -787,23 +846,38 @@ export function AddUserWizard({ onClose }: AddUserWizardProps) {
 
           {step === 'success' && (
             <div className="flex flex-col items-stretch gap-8">
-              <div className="flex flex-col items-center gap-1.5 text-center text-neutral-default">
-                <h2 className="text-heading-8">{fullName} added</h2>
-                <p className="typography-body-md max-w-md">
+              <div className="flex flex-col justify-center items-start gap-1.5 text-center text-neutral-default">
+                <h2 className="typography-heading-lg">{fullName} added</h2>
+                <p className="typography-body-md w-full text-left">
                   {accountMode === 'invite'
                     ? 'An email invite was sent with instructions to log in and set their password.'
-                    : 'Their account is ready. Share their username so they can sign in.'}
+                    : `Copy and give ${fullName || 'this user'} their username and password to access their account.`}
                 </p>
               </div>
               <Card
                 appearance="neutral"
                 size="medium"
+                customClasses={
+                  accountMode === 'credentials'
+                    ? {
+                        content: [
+                          'flex',
+                          'min-w-0',
+                          'flex-row',
+                          'items-center',
+                          'justify-between',
+                          'gap-4',
+                        ],
+                      }
+                    : undefined
+                }
               >
                 <MediaLeftBlockLayout
                   size="large"
                   appearance="default"
                   mediaSlot={<UserThumbnail size="large" userName={fullName || 'User'} />}
                   titleSlot={fullName || 'User'}
+                  customClasses={{ title: ['font-bold'] }}
                 >
                   <div className="flex flex-col gap-1 typography-body-sm text-neutral-default">
                     {accountMode === 'invite' ? (
@@ -814,13 +888,30 @@ export function AddUserWizard({ onClose }: AddUserWizardProps) {
                     <span>{ACCESS_TITLE[accessKey]}</span>
                   </div>
                 </MediaLeftBlockLayout>
+                {accountMode === 'credentials' ? (
+                  <Button
+                    type="button"
+                    appearance="ghost-primary"
+                    size="medium"
+                    prefixSlot={<IconContentCopy20 aria-hidden />}
+                    onClick={() => void handleCopyLoginDetails()}
+                    customClasses={{ container: ['shrink-0'] }}
+                    aria-label={
+                      loginDetailsCopied
+                        ? 'Login details copied to clipboard'
+                        : 'Copy log in details to clipboard'
+                    }
+                  >
+                    {loginDetailsCopied ? 'Copied' : 'Copy log in details'}
+                  </Button>
+                ) : null}
               </Card>
 
               <div
                 className="flex flex-col gap-4"
                 aria-labelledby="add-user-success-assigned-apps-heading"
               >
-                <h3 id="add-user-success-assigned-apps-heading" className="text-heading-6 text-neutral-default">
+                <h3 id="add-user-success-assigned-apps-heading" className="typography-heading-md">
                   Assigned apps
                 </h3>
                 <div className="flex w-full flex-col gap-4">
@@ -830,6 +921,9 @@ export function AddUserWizard({ onClose }: AddUserWizardProps) {
                       id={`add-user-app-success-${app.id}`}
                       appearance="neutral"
                       size="medium"
+                      customClasses={{
+                        content: [...APP_CARD_CONTENT_CLASSES],
+                      }}
                     >
                       <div className="flex flex-wrap items-center gap-4">
                         <AppRowThumbnail />

@@ -263,7 +263,7 @@ export function UsersPage() {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-[1100px] flex-col gap-6">
+    <div className="mx-auto flex w-full max-w-[1100px] flex-col gap-8">
       <div className="flex w-full flex-row items-center justify-between gap-4">
         <div className="flex min-w-0 flex-1 flex-col gap-1">
           <h1 className='typography-heading-lg'>Users</h1>

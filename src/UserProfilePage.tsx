@@ -10,6 +10,7 @@ import {
   IconUpload20,
   Input,
   Link,
+  MediaLeftBlockLayout,
   MultiSelect,
   Select,
   UserThumbnail,
@@ -122,6 +123,10 @@ const PROFILE_ACCESS_OPTIONS: {
         'Full account control including billing, user management, and all products linked to this account.',
     },
   ]
+
+const PROFILE_ACCESS_TITLE = Object.fromEntries(
+  PROFILE_ACCESS_OPTIONS.map(({ value, title }) => [value, title]),
+) as Record<ProfileAccessKey, string>
 
 const PROFILE_BY_USER_ID: Record<string, UserProfileDetail> = {
   '1': {
@@ -310,7 +315,7 @@ function parseAppsFromList(appsCsv: string): WizardAppId[] {
   return out
 }
 
-export function profileDetailForUser(user: UserProfileUser): UserProfileDetail {
+function profileDetailForUser(user: UserProfileUser): UserProfileDetail {
   const preset = PROFILE_BY_USER_ID[user.id]
   if (preset) return preset
 
@@ -354,20 +359,9 @@ export function profileDetailForUser(user: UserProfileUser): UserProfileDetail {
   }
 }
 
-const APP_ROW_CARD_CLASSES = {
-  container: ['w-full', 'min-h-0', 'p-0', 'gap-0', 'shadow-none'],
-  content: [
-    'mr-0',
-    'flex',
-    'w-full',
-    'min-w-0',
-    'flex-col',
-    'gap-4',
-    'p-6',
-    'text-left',
-    'typography-body-sm',
-  ],
-} as const
+const APP_CARD_CONTENT_CLASSES = ['flex', 'flex-col', 'gap-4'] as const
+
+const APP_ROW_THUMB_SRC = `${import.meta.env.BASE_URL}icons/retail-app.png`
 
 export type UserProfilePageProps = {
   user: UserProfileUser
@@ -409,12 +403,14 @@ export function UserProfilePage({ user, onBack }: UserProfilePageProps) {
                   '-translate-y-1/2',
                   'mr-2',
                   'shrink-0',
+                  'w-11',
+                  'min-w-11',
                 ],
               }}
             >
               <IconArrowBackIosNew20 aria-hidden />
             </Button>
-            <h1 className="text-heading-8 text-neutral-default">{fullName}</h1>
+            <h2 className="typography-heading-lg">{fullName}</h2>
           </div>
           <p className="typography-body-md text-neutral-default">
             Manage users across all your products
@@ -433,18 +429,43 @@ export function UserProfilePage({ user, onBack }: UserProfilePageProps) {
 
       <section className="flex flex-col gap-6 sm:flex-row sm:gap-10">
         <div className="flex w-full shrink-0 flex-col gap-1.5 sm:max-w-[320px]">
-          <h2 className="text-heading-6 text-neutral-default">Details</h2>
+          <h2 className="typography-heading-sm">Details</h2>
           <p className="typography-body-sm text-neutral-default">Personal and contact information.</p>
         </div>
         <div className="flex min-w-0 flex-1 flex-col gap-6">
-          <Card appearance="neutral" size="medium">
-            <div className="flex flex-wrap items-center gap-4">
-              <UserThumbnail size="large" userName={fullName} />
-              <div className="flex min-w-0 flex-col gap-0.5">
-                <p className="typography-body-md-emphasized text-neutral-default">{fullName}</p>
-                <p className="typography-body-sm text-neutral-default">{seed.summarySecondary}</p>
-              </div>
-            </div>
+          <Card
+            appearance="neutral"
+            size="medium"
+            customClasses={{
+              content: [
+                'flex',
+                'min-w-0',
+                'flex-row',
+                'items-center',
+                'justify-between',
+                'gap-4',
+              ],
+            }}
+          >
+            <MediaLeftBlockLayout
+              size="large"
+              appearance="default"
+              mediaSlot={<UserThumbnail size="large" userName={fullName} />}
+              titleSlot={fullName}
+              customClasses={{ title: ['font-bold'] }}
+            >
+              {PROFILE_ACCESS_TITLE[accessKey]}
+            </MediaLeftBlockLayout>
+            <Button
+              type="button"
+              appearance="ghost-primary"
+              size="medium"
+              prefixSlot={<IconUpload20 aria-hidden />}
+              onClick={() => undefined}
+              customClasses={{ container: ['shrink-0'] }}
+            >
+              Upload profile photo
+            </Button>
           </Card>
           <div className="flex flex-wrap gap-4">
             <div className="min-w-[200px] flex-1">
@@ -476,19 +497,6 @@ export function UserProfilePage({ user, onBack }: UserProfilePageProps) {
               autocomplete="email"
             />
           </Field>
-          <div className="flex flex-col gap-2">
-            <p className="typography-body-md-emphasized text-neutral-default">Profile picture</p>
-            <Button
-              type="button"
-              appearance="secondary"
-              size="medium"
-              prefixSlot={<IconUpload20 aria-hidden />}
-              onClick={() => undefined}
-            >
-              Upload photo
-            </Button>
-          </div>
-
         </div>
       </section>
 
@@ -496,17 +504,17 @@ export function UserProfilePage({ user, onBack }: UserProfilePageProps) {
 
       <section className="flex flex-col gap-6 sm:flex-row sm:gap-10">
         <div className="flex w-full shrink-0 flex-col gap-1.5 sm:max-w-[320px]">
-          <h2 className="text-heading-6 text-neutral-default">User Roles</h2>
+          <h2 className="typography-heading-sm">Access level</h2>
           <p className="typography-body-sm text-neutral-default">
-            Controls what this user can manage across your, and their Lightspeed account.{' '}
+          Controls what this user can access.
             <Link
               href="https://design.lightspeedhq.com"
               target="_blank"
               rel="noreferrer"
               appearance="primary"
-              size="small"
+              size="medium"
             >
-              Learn more
+              Learn more about account access levels.
             </Link>
           </p>
         </div>
@@ -578,28 +586,34 @@ export function UserProfilePage({ user, onBack }: UserProfilePageProps) {
 
       <section className="flex flex-col gap-6 sm:flex-row sm:gap-10">
         <div className="flex w-full shrink-0 flex-col gap-1.5 sm:max-w-[320px]">
-          <h2 className="text-heading-6 text-neutral-default">Apps</h2>
+          <h2 className="typography-heading-sm">Applications</h2>
           <p className="typography-body-sm text-neutral-default">
             Manage user access to available Lightspeed products.
           </p>
         </div>
         <div className="flex min-w-0 flex-1 flex-col gap-4">
-          <CardStack customClasses={{ container: ['w-full'] }}>
-            {apps.map((app) => (
-              <Card
+          {apps.map((app) => (
+            <Card
                 key={app.id}
                 appearance="neutral"
                 size="medium"
                 customClasses={{
-                  container: [...APP_ROW_CARD_CLASSES.container],
-                  content: [...APP_ROW_CARD_CLASSES.content],
+                  content: [...APP_CARD_CONTENT_CLASSES],
                 }}
               >
                 <div className="flex flex-wrap items-center gap-4">
-                  <div className="size-11 shrink-0 rounded-lg bg-neutral-backdrop" aria-hidden />
+                  <img
+                    src={APP_ROW_THUMB_SRC}
+                    alt=""
+                    width={56}
+                    height={56}
+                    className="size-14 shrink-0 rounded-lg object-cover"
+                    decoding="async"
+                    draggable={false}
+                  />
                   <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                    <p className="typography-body-sm-emphasized text-neutral-default">{app.shop}</p>
-                    <p className="typography-body-xs text-neutral-default">{app.productLine}</p>
+                    <p className="typography-body-md-emphasized text-neutral-default">{app.shop}</p>
+                    <p className="typography-body-sm text-neutral-default">{app.productLine}</p>
                   </div>
                   {app.assigned ? (
                     <Button
@@ -617,7 +631,7 @@ export function UserProfilePage({ user, onBack }: UserProfilePageProps) {
                       }
                       customClasses={{ container: ['shrink-0'] }}
                     >
-                      Remove app
+                      Remove product
                     </Button>
                   ) : (
                     <Button
@@ -633,7 +647,7 @@ export function UserProfilePage({ user, onBack }: UserProfilePageProps) {
                       }
                       customClasses={{ container: ['shrink-0'] }}
                     >
-                      Assign app
+                      Assign product
                     </Button>
                   )}
                 </div>
@@ -679,7 +693,6 @@ export function UserProfilePage({ user, onBack }: UserProfilePageProps) {
                 )}
               </Card>
             ))}
-          </CardStack>
         </div>
       </section>
 
@@ -687,7 +700,7 @@ export function UserProfilePage({ user, onBack }: UserProfilePageProps) {
 
       <section className="flex flex-col gap-6 sm:flex-row sm:gap-10">
         <div className="flex w-full shrink-0 flex-col gap-1.5 sm:max-w-[320px]">
-          <h2 className="text-heading-6 text-neutral-default">Security</h2>
+          <h2 className="typography-heading-sm">Security</h2>
           <p className="typography-body-sm text-neutral-default">
             Use a secure password to make sure your account stays safe.
           </p>
