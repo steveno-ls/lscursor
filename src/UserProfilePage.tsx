@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from 'react'
 import { ProductAppCardHeader } from './components/ProductAppCardHeader'
+import { UserProfileStickyHeader } from './components/UserProfileStickyHeader'
 import {
   clearedAppAssignment,
   ProductAppAssignmentFields,
@@ -24,7 +25,6 @@ import {
   Card,
   CardStack,
   Field,
-  IconArrowBackIosNew20,
   IconDelete20,
   IconUpload20,
   Input,
@@ -151,48 +151,15 @@ export function UserProfilePage({ user, initialProfile, onBack, onSave }: UserPr
   ])
 
   return (
-    <div className="mx-auto flex w-full max-w-[1100px] flex-col gap-10 px-4 pb-12 font-general sm:px-0">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="relative flex min-h-11 max-w-[640px] flex-col gap-1">
-          <div className="relative flex min-h-11 items-center">
-            <Button
-              type="button"
-              appearance="ghost"
-              size="medium"
-              onClick={onBack}
-              aria-label="Back to users"
-              customClasses={{
-                container: [
-                  'absolute',
-                  'right-full',
-                  'top-1/2',
-                  '-translate-y-1/2',
-                  'mr-2',
-                  'shrink-0',
-                  'w-11',
-                  'min-w-11',
-                ],
-              }}
-            >
-              <IconArrowBackIosNew20 aria-hidden />
-            </Button>
-            <h2 className="typography-heading-lg">{fullName}</h2>
-          </div>
-          <p className="typography-body-md text-neutral-default">
-            Manage users across all your products
-          </p>
-        </div>
-        <Button
-          type="button"
-          appearance="primary"
-          size="medium"
-          onClick={handleSave}
-          customClasses={{ container: ['shrink-0', 'self-start'] }}
-        >
-          Save
-        </Button>
-      </div>
+    <div className="flex w-full flex-col font-general">
+      <UserProfileStickyHeader
+        fullName={fullName}
+        onBack={onBack}
+        onSave={handleSave}
+        showSave={hasChanges}
+      />
 
+      <div className="mx-auto flex w-full max-w-[1100px] flex-col gap-8 px-4 pb-12 pt-8 sm:px-0">
       <section className="flex flex-col gap-6 sm:flex-row sm:gap-10">
         <div className="flex w-full shrink-0 flex-col gap-1.5 sm:max-w-[320px]">
           <h2 className="typography-heading-sm">Details</h2>
@@ -463,6 +430,7 @@ export function UserProfilePage({ user, initialProfile, onBack, onSave }: UserPr
         >
           Delete user
         </Button>
+      </div>
       </div>
     </div>
   )

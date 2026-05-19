@@ -1,4 +1,3 @@
-import { Section } from '@lightspeed/unified-components-helios-theme/react'
 import type { ReactNode } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { AppHeader, APP_HEADER_HEIGHT_PX } from './components/AppHeader'
@@ -8,18 +7,11 @@ function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen bg-neutral-topmost">
       <AppHeader />
-      <div style={{ paddingTop: APP_HEADER_HEIGHT_PX }}>
-        <Section
-          appearance="secondary"
-          contentWidth="wide"
-          paddingTop="large"
-          paddingBottom="large"
-          customClasses={{
-            container: ['min-h-[calc(100vh-67px)]', 'bg-neutral-topmost'],
-          }}
-        >
-          {children}
-        </Section>
+      <div
+        className="min-h-[calc(100vh-67px)] bg-neutral-topmost"
+        style={{ paddingTop: APP_HEADER_HEIGHT_PX }}
+      >
+        {children}
       </div>
     </div>
   )

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import { AddUserWizard, type CreatedUserResult } from './AddUserWizard'
 import { useProductLine } from './context/ProductLineContext'
 import type { UserProfileDetail, UserRow } from './config/types'
@@ -6,6 +6,7 @@ import { UserProfilePage } from './UserProfilePage'
 import {
   Button,
   Card,
+  Section,
   CheckMark,
   DropdownListItem,
   FilterButton,
@@ -39,6 +40,22 @@ function isOwnerAccess(accountAccess: string): boolean {
 function initialEnabledById(users: UserRow[]): Record<string, boolean> {
   return Object.fromEntries(
     users.map((u) => [u.id, isOwnerAccess(u.accountAccess) ? true : u.enabled]),
+  )
+}
+
+function UsersSection({ children }: { children: ReactNode }) {
+  return (
+    <Section
+      appearance="secondary"
+      contentWidth="wide"
+      paddingTop="none"
+      paddingBottom="none"
+      customClasses={{
+        container: ['min-h-[calc(100vh-67px)]', 'bg-neutral-topmost'],
+      }}
+    >
+      <div className="flex w-full justify-center pt-8">{children}</div>
+    </Section>
   )
 }
 
@@ -214,31 +231,30 @@ export function UsersPage() {
 
   if (addUserOpen) {
     return (
-      <div className="flex w-full justify-center">
+      <UsersSection>
         <AddUserWizard
           existingUsers={users}
           onUserCreated={handleUserCreated}
           onClose={() => setAddUserOpen(false)}
         />
-      </div>
+      </UsersSection>
     )
   }
 
   const profileUser = profileUserId ? users.find((u) => u.id === profileUserId) : undefined
   if (profileUser) {
     return (
-      <div className="flex w-full justify-center">
-        <UserProfilePage
-          user={profileUser}
-          initialProfile={createdProfilesByUserId[profileUser.id]}
-          onSave={handleProfileSave}
-          onBack={() => setProfileUserId(null)}
-        />
-      </div>
+      <UserProfilePage
+        user={profileUser}
+        initialProfile={createdProfilesByUserId[profileUser.id]}
+        onSave={handleProfileSave}
+        onBack={() => setProfileUserId(null)}
+      />
     )
   }
 
   return (
+    <UsersSection>
     <div className="mx-auto flex w-full max-w-[1100px] flex-col gap-8">
       <div className="flex w-full flex-row items-center justify-between gap-4">
         <div className="flex min-w-0 flex-1 flex-col gap-1">
@@ -325,5 +341,6 @@ export function UsersPage() {
           </TableBody>
         </Table>
     </div>
+    </UsersSection>
   )
 }
