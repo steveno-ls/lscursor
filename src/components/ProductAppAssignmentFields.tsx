@@ -69,7 +69,7 @@ export function ProductAppAssignmentFields({
           <Checkbox
             size="medium"
             checked={Boolean(app.useUniquePin)}
-            labelSlot="Set a unique PIN for each employee."
+            labelSlot="Set a unique PIN for this employee."
             onChange={(checked) =>
               onChange({
                 ...app,

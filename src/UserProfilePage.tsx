@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react'
-import { AppRowThumbnail } from './components/AppRowThumbnail'
+import { ProductAppCardHeader } from './components/ProductAppCardHeader'
 import {
   clearedAppAssignment,
   ProductAppAssignmentFields,
@@ -367,56 +367,58 @@ export function UserProfilePage({ user, initialProfile, onBack, onSave }: UserPr
                   content: [...APP_CARD_CONTENT_CLASSES],
                 }}
               >
-                <div className="flex flex-wrap items-center gap-4">
-                  <AppRowThumbnail appId={app.id} />
-                  <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                    <p className="typography-body-md-emphasized text-neutral-default">{app.shop}</p>
-                    <p className="typography-body-sm text-neutral-default">{app.productLine}</p>
-                  </div>
-                  {app.assigned ? (
-                    <Button
-                      type="button"
-                      appearance="danger-ghost"
-                      size="medium"
-                      onClick={() =>
-                        setApps((prev) =>
-                          prev.map((a) =>
-                            a.id === app.id
-                              ? { ...a, ...clearedAppAssignment() }
-                              : a,
-                          ),
-                        )
-                      }
-                      customClasses={{ container: ['shrink-0'] }}
-                    >
-                      {productLine.removeProductLabel ?? 'Remove app'}
-                    </Button>
-                  ) : (
-                    <Button
-                      type="button"
-                      appearance="ghost-primary"
-                      size="medium"
-                      onClick={() =>
-                        setApps((prev) =>
-                          prev.map((a) =>
-                            a.id === app.id ? {
-                            ...a,
-                            assigned: true,
-                            role: '',
-                            locations: [],
-                            useUniquePin: false,
-                            pin: '',
-                            pinConfirm: '',
-                          } : a,
-                          ),
-                        )
-                      }
-                      customClasses={{ container: ['shrink-0'] }}
-                    >
-                      {productLine.assignProductLabel ?? 'Assign app'}
-                    </Button>
-                  )}
-                </div>
+                <ProductAppCardHeader
+                  appId={app.id}
+                  shop={app.shop}
+                  productLine={app.productLine}
+                  actionSlot={
+                    app.assigned ? (
+                      <Button
+                        type="button"
+                        appearance="danger-ghost"
+                        size="medium"
+                        onClick={() =>
+                          setApps((prev) =>
+                            prev.map((a) =>
+                              a.id === app.id
+                                ? { ...a, ...clearedAppAssignment() }
+                                : a,
+                            ),
+                          )
+                        }
+                        customClasses={{ container: ['shrink-0'] }}
+                      >
+                        {productLine.removeProductLabel ?? 'Remove app'}
+                      </Button>
+                    ) : (
+                      <Button
+                        type="button"
+                        appearance="ghost-primary"
+                        size="medium"
+                        onClick={() =>
+                          setApps((prev) =>
+                            prev.map((a) =>
+                              a.id === app.id
+                                ? {
+                                    ...a,
+                                    assigned: true,
+                                    role: '',
+                                    locations: [],
+                                    useUniquePin: false,
+                                    pin: '',
+                                    pinConfirm: '',
+                                  }
+                                : a,
+                            ),
+                          )
+                        }
+                        customClasses={{ container: ['shrink-0'] }}
+                      >
+                        {productLine.assignProductLabel ?? 'Assign app'}
+                      </Button>
+                    )
+                  }
+                />
                 {app.assigned ? (
                   <ProductAppAssignmentFields
                     app={app}

@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { AppRowThumbnail } from './components/AppRowThumbnail'
+import { ProductAppCardHeader } from './components/ProductAppCardHeader'
 import {
   clearedAppAssignment,
   ProductAppAssignmentFields,
 } from './components/ProductAppAssignmentFields'
-import type { ProductAppRow, UserRow } from './config/types'
+import type { ProductAppRow, ProductLineConfig, UserRow } from './config/types'
 import { useProductLine } from './context/ProductLineContext'
 import {
   createUserFromWizard,
@@ -49,31 +49,31 @@ const ACCESS_OPTIONS: {
   description: string
   defaultBadge?: boolean
 }[] = [
-  {
-    value: 'staff',
-    title: 'Staff',
-    description: 'Can update their own profile and password only.',
-    defaultBadge: true,
-  },
-  {
-    value: 'site_lead',
-    title: 'Site lead',
-    description:
-      'Can manage Staff with the same applications, within their assigned locations.',
-  },
-  {
-    value: 'area_lead',
-    title: 'Area lead',
-    description:
-      'Can manage Site lead and Staff with the same applications, across all locations.',
-  },
-  {
-    value: 'admin',
-    title: 'Admin',
-    description:
-      'Can manage all users, applications, and locations (except Owners).',
-  },
-]
+    {
+      value: 'staff',
+      title: 'Staff',
+      description: 'Can update their own profile and password only.',
+      defaultBadge: true,
+    },
+    {
+      value: 'site_lead',
+      title: 'Site lead',
+      description:
+        'Can manage Staff with the same applications, within their assigned locations.',
+    },
+    {
+      value: 'area_lead',
+      title: 'Area lead',
+      description:
+        'Can manage Site lead and Staff with the same applications, across all locations.',
+    },
+    {
+      value: 'admin',
+      title: 'Admin',
+      description:
+        'Can manage all users, applications, and locations (except Owners).',
+    },
+  ]
 
 const ACCESS_TITLE: Record<AccessKey, string> = {
   staff: 'Staff',
@@ -128,13 +128,93 @@ function generateTemporaryPassword(): string {
   while (out.length < targetLen) out.push(pick(all))
   for (let i = out.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1))
-    ;[out[i], out[j]] = [out[j]!, out[i]!]
+      ;[out[i], out[j]] = [out[j]!, out[i]!]
   }
   return out.join('')
 }
 
 /** Standalone product cards (not CardStack): keep default Card border/padding; stack rows in content. */
 const APP_CARD_CONTENT_CLASSES = ['flex', 'flex-col', 'gap-4'] as const
+
+const SUCCESS_ILLUSTRATION_SRC = `${import.meta.env.BASE_URL}success-illustration.png`
+
+type SuccessAssignedAppCardProps = {
+  app: ProductAppRow
+  roleLabel: string
+  locationLabel: string | null
+  showPin: boolean
+}
+
+function SuccessAssignedAppCard({
+  app,
+  roleLabel,
+  locationLabel,
+  showPin,
+}: SuccessAssignedAppCardProps) {
+  const hasLocation = locationLabel != null
+
+  return (
+    <Card
+      appearance="neutral"
+      size="medium"
+      customClasses={{
+        content: [...APP_CARD_CONTENT_CLASSES],
+      }}
+    >
+      <ProductAppCardHeader
+        appId={app.id}
+        shop={app.shop}
+        productLine={app.productLine}
+      />
+      {hasLocation ? (
+        <div className="flex w-full gap-6">
+          <div className="flex min-w-0 flex-1 flex-col gap-1">
+            <p className="typography-body-sm-emphasized text-neutral-default">Role</p>
+            <p className="typography-body-sm-emphasized text-neutral-default">Location</p>
+          </div>
+          <div className="flex min-w-0 flex-1 flex-col gap-1">
+            <p className="typography-body-sm text-neutral-default">{roleLabel}</p>
+            <p className="typography-body-sm text-neutral-default">{locationLabel}</p>
+          </div>
+        </div>
+      ) : (
+        <div className="flex w-full gap-4">
+          <div className="flex min-w-0 flex-1 flex-col">
+            <p className="typography-body-sm-emphasized text-neutral-default">Role</p>
+          </div>
+          <div className="flex min-w-0 flex-1 flex-col">
+            <p className="typography-body-sm text-neutral-default">{roleLabel}</p>
+          </div>
+        </div>
+      )}
+      {showPin ? (
+        <div className="flex w-full gap-4">
+          <div className="flex min-w-0 flex-1 flex-col">
+            <p className="typography-body-sm-emphasized text-neutral-default">PIN</p>
+          </div>
+          <div className="flex min-w-0 flex-1 flex-col">
+            <p className="typography-body-sm text-neutral-default">Unique PIN set</p>
+          </div>
+        </div>
+      ) : null}
+    </Card>
+  )
+}
+
+function successAssignedAppCardProps(
+  app: ProductAppRow,
+  productLine: ProductLineConfig,
+): SuccessAssignedAppCardProps {
+  return {
+    app,
+    roleLabel: productLine.roleLabelFor(app.id, app.role),
+    locationLabel:
+      productLine.appSupportsLocations(app.id) && app.locations.length > 0
+        ? productLine.locationLabels(app.locations)
+        : null,
+    showPin: Boolean(app.useUniquePin && app.pin),
+  }
+}
 
 export function AddUserWizard({
   onClose,
@@ -323,18 +403,18 @@ export function AddUserWizard({
               <section className="flex flex-col gap-8">
                 <div className="flex flex-col gap-1.5 text-neutral-default">
                   <h2 id="add-user-assign-access-heading" className="typography-heading-sm">
-                  What access level do you want to give this user?
+                    What access level do you want to give this user?
                   </h2>
                   <p className="typography-body-sm">
-                  Choose what access level you want to give this user.
+                    Each level controls what this user can manage. {' '}
                     <Link
-                      href="https://design.lightspeedhq.com"
+                      href="https://x-series-support.lightspeedhq.com/hc/en-us"
                       target="_blank"
                       rel="noreferrer"
                       appearance="primary"
                       size="medium"
                     >
-                      Learn more about account access.
+                      Learn more about account access levels.
                     </Link>
                   </p>
                 </div>
@@ -415,10 +495,10 @@ export function AddUserWizard({
               >
                 <div className="flex flex-col gap-1.5 text-neutral-default">
                   <h2 id="add-user-assign-apps-heading" className="typography-heading-sm">
-                  What applications does this user need to use?
+                    What applications does this user need to use?
                   </h2>
                   <p className="typography-body-sm">
-                  Select the applications this user can use and configure each one.
+                    Add the apps this user needs and configure each one.
                   </p>
                 </div>
 
@@ -433,60 +513,58 @@ export function AddUserWizard({
                         content: [...APP_CARD_CONTENT_CLASSES],
                       }}
                     >
-                      <div className="flex flex-wrap items-center gap-4">
-                        <AppRowThumbnail appId={app.id} />
-                        <div className="flex min-w-0 flex-1 flex-col gap-1">
-                          <p className="typography-body-md-emphasized text-neutral-default">
-                            {app.shop}
-                          </p>
-                          <p className="typography-body-sm text-neutral-default">{app.productLine}</p>
-                        </div>
-                        {app.assigned ? (
-                          <Button
-                            type="button"
-                            appearance="danger-ghost"
-                            size="medium"
-                            onClick={() =>
-                              setApps((prev) =>
-                                prev.map((a) =>
-                                  a.id === app.id
-                                    ? { ...a, ...clearedAppAssignment() }
-                                    : a,
-                                ),
-                              )
-                            }
-                            customClasses={{ container: ['shrink-0'] }}
-                          >
-                            {productLine.removeProductLabel ?? 'Remove app'}
-                          </Button>
-                        ) : (
-                          <Button
-                            type="button"
-                            appearance="ghost-primary"
-                            size="medium"
-                            onClick={() =>
-                              setApps((prev) =>
-                                prev.map((a) =>
-                                  a.id === app.id
-                                    ? {
-                                        ...a,
-                                        assigned: true,
-                                        role: '',
-                                        locations: [],
-                                        useUniquePin: false,
-                                        pin: '',
-                                        pinConfirm: '',
-                                      }
-                                    : a,
-                                ),
-                              )
-                            }
-                            customClasses={{ container: ['shrink-0'] }}
-                          >
-                            {productLine.assignProductLabel ?? 'Assign app'}
-                          </Button>
-                        )}
-                      </div>
+                      <ProductAppCardHeader
+                        appId={app.id}
+                        shop={app.shop}
+                        productLine={app.productLine}
+                        actionSlot={
+                          app.assigned ? (
+                            <Button
+                              type="button"
+                              appearance="danger-ghost"
+                              size="medium"
+                              onClick={() =>
+                                setApps((prev) =>
+                                  prev.map((a) =>
+                                    a.id === app.id
+                                      ? { ...a, ...clearedAppAssignment() }
+                                      : a,
+                                  ),
+                                )
+                              }
+                              customClasses={{ container: ['shrink-0'] }}
+                            >
+                              {productLine.removeProductLabel ?? 'Remove app'}
+                            </Button>
+                          ) : (
+                            <Button
+                              type="button"
+                              appearance="ghost-primary"
+                              size="medium"
+                              onClick={() =>
+                                setApps((prev) =>
+                                  prev.map((a) =>
+                                    a.id === app.id
+                                      ? {
+                                          ...a,
+                                          assigned: true,
+                                          role: '',
+                                          locations: [],
+                                          useUniquePin: false,
+                                          pin: '',
+                                          pinConfirm: '',
+                                        }
+                                      : a,
+                                  ),
+                                )
+                              }
+                              customClasses={{ container: ['shrink-0'] }}
+                            >
+                              {productLine.assignProductLabel ?? 'Assign app'}
+                            </Button>
+                          )
+                        }
+                      />
 
                       {app.assigned ? (
                         <ProductAppAssignmentFields
@@ -583,25 +661,25 @@ export function AddUserWizard({
                     ],
                   }}
                 >
-                    <MediaLeftBlockLayout
-                      size="large"
-                      appearance="default"
-                      mediaSlot={<UserThumbnail size="large" userName={fullName || 'User'} />}
-                      titleSlot={fullName || 'User name'}
-                      customClasses={{ title: ['font-bold'] }}
-                    >
-                      {ACCESS_TITLE[accessKey]}
-                    </MediaLeftBlockLayout>
-                    <Button
-                      type="button"
-                      appearance="ghost-primary"
-                      size="medium"
-                      prefixSlot={<IconUpload20 aria-hidden />}
-                      onClick={() => undefined}
-                      customClasses={{ container: ['shrink-0'] }}
-                    >
-                      Upload profile photo
-                    </Button>
+                  <MediaLeftBlockLayout
+                    size="large"
+                    appearance="default"
+                    mediaSlot={<UserThumbnail size="large" userName={fullName || 'User'} />}
+                    titleSlot={fullName || 'User name'}
+                    customClasses={{ title: ['font-bold'] }}
+                  >
+                    {ACCESS_TITLE[accessKey]}
+                  </MediaLeftBlockLayout>
+                  <Button
+                    type="button"
+                    appearance="ghost-primary"
+                    size="medium"
+                    prefixSlot={<IconUpload20 aria-hidden />}
+                    onClick={() => undefined}
+                    customClasses={{ container: ['shrink-0'] }}
+                  >
+                    Upload profile photo
+                  </Button>
                 </Card>
               </section>
 
@@ -744,119 +822,86 @@ export function AddUserWizard({
 
           {step === 'success' && (
             <div className="flex flex-col items-stretch gap-8">
-              <div className="flex flex-col justify-center items-start gap-1.5 text-center text-neutral-default">
-                <h2 className="typography-heading-lg">{fullName} added</h2>
-                <p className="typography-body-md w-full text-left">
+              <div className="flex flex-col items-center justify-center gap-1.5 text-center text-neutral-default">
+                <img
+                  src={SUCCESS_ILLUSTRATION_SRC}
+                  alt=""
+                  width={96}
+                  height={72}
+                  className="h-[72px] w-24 shrink-0 object-contain"
+                  decoding="async"
+                  draggable={false}
+                />
+                <h2 className="typography-heading-lg w-full">{fullName} added</h2>
+                <p className="typography-body-md w-full">
                   {accountMode === 'invite'
                     ? 'An email invite was sent with instructions to log in and set their password.'
                     : `Copy and give ${fullName || 'this user'} their username and password to access their account.`}
                 </p>
               </div>
-              <Card
-                appearance="neutral"
-                size="medium"
-                customClasses={
-                  accountMode === 'credentials'
-                    ? {
-                        content: [
-                          'flex',
-                          'min-w-0',
-                          'flex-row',
-                          'items-center',
-                          'justify-between',
-                          'gap-4',
-                        ],
-                      }
-                    : undefined
-                }
-              >
-                <MediaLeftBlockLayout
-                  size="large"
-                  appearance="default"
-                  mediaSlot={<UserThumbnail size="large" userName={fullName || 'User'} />}
-                  titleSlot={fullName || 'User'}
-                  customClasses={{ title: ['font-bold'] }}
-                >
-                  <div className="flex flex-col gap-1 typography-body-sm text-neutral-default">
-                    {accountMode === 'invite' ? (
-                      <span>{email}</span>
-                    ) : (
-                      <span>{username}</span>
-                    )}
-                    <span>{ACCESS_TITLE[accessKey]}</span>
-                  </div>
-                </MediaLeftBlockLayout>
-                {accountMode === 'credentials' ? (
-                  <Button
-                    type="button"
-                    appearance="ghost-primary"
+              <div className="flex w-full flex-col gap-4">
+                  <Card
+                    appearance="neutral"
                     size="medium"
-                    prefixSlot={<IconContentCopy20 aria-hidden />}
-                    onClick={() => void handleCopyLoginDetails()}
-                    customClasses={{ container: ['shrink-0'] }}
-                    aria-label={
-                      loginDetailsCopied
-                        ? 'Login details copied to clipboard'
-                        : 'Copy log in details to clipboard'
-                    }
+                    customClasses={{
+                      content: [
+                        'flex',
+                        'min-w-0',
+                        'w-full',
+                        'flex-row',
+                        'items-center',
+                        'gap-4',
+                        accountMode === 'credentials' ? 'justify-between' : '',
+                      ].filter(Boolean),
+                    }}
                   >
-                    {loginDetailsCopied ? 'Copied' : 'Copy log in details'}
-                  </Button>
-                ) : null}
-              </Card>
+                    <div className="flex min-w-0 flex-1 items-center gap-4">
+                      <UserThumbnail size="large" userName={fullName || 'User'} />
+                      <div className="flex min-w-0 flex-1 flex-col gap-1">
+                        <p className="typography-heading-sm text-neutral-default">
+                          {fullName || 'User'}
+                        </p>
+                        <p className="typography-body-sm text-neutral-default">
+                          {accountMode === 'invite' ? email : username}
+                        </p>
+                        <p className="typography-body-sm text-neutral-default">
+                          {ACCESS_TITLE[accessKey]}
+                        </p>
+                      </div>
+                    </div>
+                    {accountMode === 'credentials' ? (
+                      <Button
+                        type="button"
+                        appearance="ghost-primary"
+                        size="medium"
+                        prefixSlot={<IconContentCopy20 aria-hidden />}
+                        onClick={() => void handleCopyLoginDetails()}
+                        customClasses={{ container: ['shrink-0'] }}
+                        aria-label={
+                          loginDetailsCopied
+                            ? 'Login details copied to clipboard'
+                            : 'Copy log in details to clipboard'
+                        }
+                      >
+                        {loginDetailsCopied ? 'Copied' : 'Copy log in details'}
+                      </Button>
+                    ) : null}
+                  </Card>
 
-              <div
-                className="flex flex-col gap-4"
-                aria-labelledby="add-user-success-assigned-apps-heading"
-              >
-                <h3 id="add-user-success-assigned-apps-heading" className="typography-heading-md">
-                  Assigned apps
-                </h3>
-                <div className="flex w-full flex-col gap-4">
-                  {assignedApps.map((app) => (
-                    <Card
-                      key={app.id}
-                      id={`add-user-app-success-${app.id}`}
-                      appearance="neutral"
-                      size="medium"
-                      customClasses={{
-                        content: [...APP_CARD_CONTENT_CLASSES],
-                      }}
-                    >
-                      <div className="flex flex-wrap items-center gap-4">
-                        <AppRowThumbnail appId={app.id} />
-                        <div className="flex min-w-0 flex-1 flex-col gap-1">
-                          <p className="typography-body-md-emphasized text-neutral-default">{app.shop}</p>
-                          <p className="typography-body-sm text-neutral-default">{app.productLine}</p>
-                        </div>
-                      </div>
-                      <div className="flex flex-wrap gap-6">
-                        <div>
-                          <p className="typography-body-md-emphasized text-neutral-default">Role</p>
-                          <p className="typography-body-sm text-neutral-default">
-                            {productLine.roleLabelFor(app.id, app.role)}
-                          </p>
-                        </div>
-                        {productLine.appSupportsLocations(app.id) ? (
-                          <div>
-                            <p className="typography-body-md-emphasized text-neutral-default">
-                              Locations
-                            </p>
-                            <p className="typography-body-sm text-neutral-default">
-                              {productLine.locationLabels(app.locations)}
-                            </p>
-                          </div>
-                        ) : null}
-                        {app.useUniquePin && app.pin ? (
-                          <div>
-                            <p className="typography-body-md-emphasized text-neutral-default">PIN</p>
-                            <p className="typography-body-sm text-neutral-default">Unique PIN set</p>
-                          </div>
-                        ) : null}
-                      </div>
-                    </Card>
-                  ))}
-                </div>
+                {assignedApps.length === 1 ? (
+                  <SuccessAssignedAppCard
+                    {...successAssignedAppCardProps(assignedApps[0]!, productLine)}
+                  />
+                ) : assignedApps.length > 1 ? (
+                  <CardStack customClasses={{ container: ['w-full'] }}>
+                    {assignedApps.map((app) => (
+                      <SuccessAssignedAppCard
+                        key={app.id}
+                        {...successAssignedAppCardProps(app, productLine)}
+                      />
+                    ))}
+                  </CardStack>
+                ) : null}
               </div>
 
               <div className="flex w-full flex-row gap-4">
@@ -876,7 +921,7 @@ export function AddUserWizard({
                   onClick={onClose}
                   customClasses={{ container: ['min-w-0', 'w-full', 'flex-1', 'basis-0'] }}
                 >
-                  Back to users
+                  Return to users
                 </Button>
               </div>
             </div>
